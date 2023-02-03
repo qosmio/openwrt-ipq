@@ -12,6 +12,8 @@ PKG_SOURCE_VERSION:=04923c51039e8ca270c6f1dde3f04f3b36958089
 PKG_MAINTAINER:=Hans Dedecker <dedeckeh@gmail.com>
 PKG_LICENSE:=GPL-2.0
 
+PKG_BUILD_PARALLEL:=1
+
 include $(INCLUDE_DIR)/package.mk
 
 define KernelPackage/nat46
@@ -25,11 +27,17 @@ endef
 
 include $(INCLUDE_DIR)/kernel-defaults.mk
 
+define Build/InstallDev
+	mkdir -p -m 0777 $(STAGING_DIR)/usr/include/nat46
+	$(CP) $(PKG_BUILD_DIR)/nat46/modules/*.h  $(STAGING_DIR)/usr/include/nat46/
+endef
+
 define Build/Compile
-	$(KERNEL_MAKE) M="$(PKG_BUILD_DIR)/nat46/modules" \
+	+$(KERNEL_MAKE) M="$(PKG_BUILD_DIR)/nat46/modules" \
 		MODFLAGS="-DMODULE -mlong-calls" \
 		EXTRA_CFLAGS="-DNAT46_VERSION=\\\"$(PKG_SOURCE_VERSION)\\\"" \
 		modules
+	cp $(PKG_BUILD_DIR)/nat46/modules/Module.symvers $(PKG_BUILD_DIR)/Module.symvers
 endef
 
 $(eval $(call KernelPackage,nat46))
