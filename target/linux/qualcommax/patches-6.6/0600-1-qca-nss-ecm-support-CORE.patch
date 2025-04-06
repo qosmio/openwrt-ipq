@@ -81,7 +81,52 @@
  		     __be16 vlan_proto, u16 vlan_id)
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -2933,6 +2933,10 @@ enum netdev_cmd {
+@@ -1761,6 +1761,36 @@ enum netdev_priv_flags {
+ 	IFF_NO_IP_ALIGN			= BIT_ULL(34),
+ };
+ 
++/**
++ * enum netdev_priv_flags_ext - &struct net_device priv_flags_ext
++ *
++ * These flags are used to check for device type and can be
++ * set and used by the drivers
++ *
++ * @IFF_EXT_TUN_TAP: device is a TUN/TAP device
++ * @IFF_EXT_PPP_L2TPV2: device is a L2TPV2 device
++ * @IFF_EXT_PPP_L2TPV3: device is a L2TPV3 device
++ * @IFF_EXT_PPP_PPTP: device is a PPTP device
++ * @IFF_EXT_GRE_V4_TAP: device is a GRE IPv4 TAP device
++ * @IFF_EXT_GRE_V6_TAP: device is a GRE IPv6 TAP device
++ * @IFF_EXT_IFB: device is an IFB device
++ * @IFF_EXT_MAPT: device is an MAPT device
++ * @IFF_EXT_HW_NO_OFFLOAD: device is an NON Offload device
++ * @IFF_EXT_L2TPV3: device is a L2TPV3 Ethernet device
++ */
++enum netdev_priv_flags_ext {
++	IFF_EXT_TUN_TAP			= 1<<0,
++	IFF_EXT_PPP_L2TPV2		= 1<<1,
++	IFF_EXT_PPP_L2TPV3		= 1<<2,
++	IFF_EXT_PPP_PPTP		= 1<<3,
++	IFF_EXT_GRE_V4_TAP		= 1<<4,
++	IFF_EXT_GRE_V6_TAP		= 1<<5,
++	IFF_EXT_IFB			= 1<<6,
++	IFF_EXT_MAPT			= 1<<7,
++	IFF_EXT_HW_NO_OFFLOAD		= 1<<8,
++	IFF_EXT_ETH_L2TPV3		= 1<<9,
++};
++
+ #define IFF_802_1Q_VLAN			IFF_802_1Q_VLAN
+ #define IFF_EBRIDGE			IFF_EBRIDGE
+ #define IFF_BONDING			IFF_BONDING
+@@ -2126,6 +2156,7 @@ struct net_device {
+ 	unsigned int		flags;
+ 	xdp_features_t		xdp_features;
+ 	unsigned long long	priv_flags;
++	unsigned int		priv_flags_ext;
+ 	const struct net_device_ops *netdev_ops;
+ 	const struct xdp_metadata_ops *xdp_metadata_ops;
+ 	int			ifindex;
+@@ -2939,6 +2970,10 @@ enum netdev_cmd {
  	NETDEV_OFFLOAD_XSTATS_REPORT_USED,
  	NETDEV_OFFLOAD_XSTATS_REPORT_DELTA,
  	NETDEV_XDP_FEAT_CHANGE,
@@ -142,7 +187,7 @@
  #endif
 --- a/include/net/route.h
 +++ b/include/net/route.h
-@@ -237,6 +237,11 @@ struct rtable *rt_dst_alloc(struct net_d
+@@ -238,6 +238,11 @@ struct rtable *rt_dst_alloc(struct net_d
  			    unsigned int flags, u16 type, bool noxfrm);
  struct rtable *rt_dst_clone(struct net_device *dev, struct rtable *rt);
  
@@ -179,7 +224,7 @@
 +	if (!is_vlan_dev(dev))
 +		return;
 +
-+	stats = per_cpu_ptr(vlan_dev_priv(dev)->vlan_pcpu_stats, 0);
++	stats = this_cpu_ptr(vlan_dev_priv(dev)->vlan_pcpu_stats);
 +
 +	u64_stats_update_begin(&stats->syncp);
 +	u64_stats_add(&stats->rx_packets, nlstats->rx_packets);
@@ -643,7 +688,7 @@
  	struct fib_table *tb;
 --- a/net/ipv6/ndisc.c
 +++ b/net/ipv6/ndisc.c
-@@ -668,6 +668,7 @@ void ndisc_send_ns(struct net_device *de
+@@ -670,6 +670,7 @@ void ndisc_send_ns(struct net_device *de
  	if (skb)
  		ndisc_send_skb(skb, daddr, saddr);
  }
@@ -663,7 +708,7 @@
  static inline const void *choose_neigh_daddr(const struct in6_addr *p,
  					     struct sk_buff *skb,
  					     const void *daddr)
-@@ -3868,6 +3871,10 @@ int ip6_route_add(struct fib6_config *cf
+@@ -3876,6 +3879,10 @@ int ip6_route_add(struct fib6_config *cf
  		return PTR_ERR(rt);
  
  	err = __ip6_ins_rt(rt, &cfg->fc_nlinfo, extack);
@@ -674,7 +719,7 @@
  	fib6_info_release(rt);
  
  	return err;
-@@ -3889,6 +3896,9 @@ static int __ip6_del_rt(struct fib6_info
+@@ -3897,6 +3904,9 @@ static int __ip6_del_rt(struct fib6_info
  	err = fib6_del(rt, info);
  	spin_unlock_bh(&table->tb6_lock);
  
@@ -684,7 +729,7 @@
  out:
  	fib6_info_release(rt);
  	return err;
-@@ -6336,6 +6346,20 @@ static int ip6_route_dev_notify(struct n
+@@ -6359,6 +6369,20 @@ static int ip6_route_dev_notify(struct n
  	return NOTIFY_OK;
  }
  
@@ -707,7 +752,7 @@
   */
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
-@@ -1699,6 +1699,7 @@ const char *netdev_cmd_to_name(enum netd
+@@ -1730,6 +1730,7 @@ const char *netdev_cmd_to_name(enum netd
  	N(PRE_CHANGEADDR) N(OFFLOAD_XSTATS_ENABLE) N(OFFLOAD_XSTATS_DISABLE)
  	N(OFFLOAD_XSTATS_REPORT_USED) N(OFFLOAD_XSTATS_REPORT_DELTA)
  	N(XDP_FEAT_CHANGE)
@@ -873,3 +918,51 @@
  	XASSIGN(MAX_RETRANS, &tn->tcp_max_retrans);
  	XASSIGN(IGNORE_INVALID_RST, &tn->tcp_ignore_invalid_rst);
  #undef XASSIGN
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -667,6 +667,8 @@ static netdev_tx_t ipgre_xmit(struct sk_
+ 	if (gre_handle_offloads(skb, !!(tunnel->parms.o_flags & TUNNEL_CSUM)))
+ 		goto free_skb;
+ 
++	skb->skb_iif = dev->ifindex;
++
+ 	__gre_xmit(skb, dev, tnl_params, skb->protocol);
+ 	return NETDEV_TX_OK;
+ 
+@@ -750,6 +752,8 @@ static netdev_tx_t gre_tap_xmit(struct s
+ 	if (skb_cow_head(skb, dev->needed_headroom))
+ 		goto free_skb;
+ 
++	skb->skb_iif = dev->ifindex;
++
+ 	__gre_xmit(skb, dev, &tunnel->parms.iph, htons(ETH_P_TEB));
+ 	return NETDEV_TX_OK;
+ 
+@@ -1337,6 +1341,7 @@ static void ipgre_tap_setup(struct net_d
+ 	dev->netdev_ops	= &gre_tap_netdev_ops;
+ 	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->priv_flags	|= IFF_LIVE_ADDR_CHANGE;
++	dev->priv_flags_ext	|= IFF_EXT_GRE_V4_TAP;
+ 	ip_tunnel_setup(dev, gre_tap_net_id);
+ }
+ 
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -1941,6 +1941,7 @@ static void ip6gre_tap_setup(struct net_
+ 
+ 	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+ 	dev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
++	dev->priv_flags_ext |= IFF_EXT_GRE_V6_TAP;
+ 	netif_keep_dst(dev);
+ }
+ 
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -999,6 +999,7 @@ static int tun_net_init(struct net_devic
+ 	dev->vlan_features = dev->features &
+ 			     ~(NETIF_F_HW_VLAN_CTAG_TX |
+ 			       NETIF_F_HW_VLAN_STAG_TX);
++	dev->priv_flags_ext |= IFF_EXT_TUN_TAP;
+ 
+ 	tun->flags = (tun->flags & ~TUN_FEATURES) |
+ 		      (ifr->ifr_flags & TUN_FEATURES);
