@@ -219,7 +219,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	int ret;
  
 +	if (ab->nss.enabled && vif->type == NL80211_IFTYPE_AP_VLAN)
-+		return 0;
++		return;
 +
  	param_id = WMI_VDEV_PARAM_TX_ENCAP_TYPE;
  	if (ath11k_frame_mode != ATH11K_HW_TXRX_ETHERNET ||
