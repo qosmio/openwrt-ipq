@@ -2816,7 +2816,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  
 --- a/drivers/net/wireless/ath/ath11k/dp_rx.c
 +++ b/drivers/net/wireless/ath/ath11k/dp_rx.c
-@@ -993,6 +993,29 @@ unlock_exit:
+@@ -994,6 +994,29 @@ unlock_exit:
  	spin_unlock_bh(&ab->base_lock);
  }
  
@@ -3026,15 +3026,15 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  };
  
  struct ath11k_soc_dp_stats {
-@@ -943,6 +1017,7 @@
+@@ -937,6 +939,7 @@ struct ath11k_base {
  	struct ath11k_htc htc;
-
+ 
  	struct ath11k_dp dp;
 +	struct ath11k_soc_nss nss;
-
+ 
  	void __iomem *mem;
  	void __iomem *mem_ce;
-@@ -982,6 +984,7 @@ struct ath11k_base {
+@@ -982,6 +985,7 @@ struct ath11k_base {
  	struct list_head peers;
  	wait_queue_head_t peer_mapping_wq;
  	u8 mac_addr[ETH_ALEN];
