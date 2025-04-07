@@ -194,16 +194,15 @@
  		goto unlock_exit;
  	}
  
-@@ -1136,7 +1136,7 @@ static void ath11k_dp_rx_tid_mem_free(st
+@@ -1138,14 +1138,14 @@ static void ath11k_dp_rx_tid_mem_free(st
  	if (!rx_tid->active)
  		goto unlock_exit;
  
--	dma_unmap_single(ab->dev, rx_tid->paddr, rx_tid->size,
-+	dma_unmap_single(ar->ab->dev, rx_tid->paddr, rx_tid->size,
- 			 DMA_BIDIRECTIONAL);
- 	kfree(rx_tid->vaddr);
- 	rx_tid->vaddr = NULL;
-@@ -1144,7 +1144,7 @@ static void ath11k_dp_rx_tid_mem_free(st
+-	dma_free_noncoherent(ab->dev, rx_tid->unaligned_size, rx_tid->vaddr_unaligned,
++	dma_free_noncoherent(ar->ab->dev, rx_tid->unaligned_size, rx_tid->vaddr_unaligned,
+ 			     rx_tid->paddr_unaligned, DMA_BIDIRECTIONAL);
+ 	rx_tid->vaddr_unaligned = NULL;
+ 
  	rx_tid->active = false;
  
  unlock_exit:
