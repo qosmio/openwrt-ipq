@@ -74,7 +74,7 @@ Signed-off-by: Tamizh Chelvam Raja <quic_tamizhr@quicinc.com>
  	if (len > size)
 --- a/drivers/net/wireless/ath/ath11k/dp.c
 +++ b/drivers/net/wireless/ath/ath11k/dp.c
-@@ -1115,8 +1115,10 @@ int ath11k_dp_alloc(struct ath11k_base *
+@@ -1102,8 +1102,10 @@ int ath11k_dp_alloc(struct ath11k_base *
  
  	INIT_LIST_HEAD(&dp->reo_cmd_list);
  	INIT_LIST_HEAD(&dp->reo_cmd_cache_flush_list);
@@ -87,15 +87,15 @@ Signed-off-by: Tamizh Chelvam Raja <quic_tamizhr@quicinc.com>
  
 --- a/drivers/net/wireless/ath/ath11k/dp.h
 +++ b/drivers/net/wireless/ath/ath11k/dp.h
-@@ -24,6 +24,7 @@ struct dp_rx_tid {
- 	u32 *vaddr;
+@@ -23,6 +23,7 @@ struct dp_rx_tid {
+ 	u8 tid;
  	dma_addr_t paddr;
  	u32 size;
 +	u32 pending_desc_size;
  	u32 ba_win_sz;
  	bool active;
  
-@@ -51,6 +52,14 @@ struct dp_reo_cache_flush_elem {
+@@ -53,6 +54,14 @@ struct dp_reo_cache_flush_elem {
  	unsigned long ts;
  };
  
@@ -110,7 +110,7 @@ Signed-off-by: Tamizh Chelvam Raja <quic_tamizhr@quicinc.com>
  struct dp_reo_cmd {
  	struct list_head list;
  	struct dp_rx_tid data;
-@@ -295,6 +304,12 @@ struct ath11k_dp {
+@@ -297,6 +306,12 @@ struct ath11k_dp {
  	 * - reo_cmd_cache_flush_count
  	 */
  	spinlock_t reo_cmd_lock;
