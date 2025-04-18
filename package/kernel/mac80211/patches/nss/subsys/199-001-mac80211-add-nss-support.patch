@@ -377,7 +377,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  
 --- a/net/mac80211/trace.h
 +++ b/net/mac80211/trace.h
-@@ -421,6 +421,38 @@ TRACE_EVENT(drv_config,
+@@ -427,6 +427,38 @@ TRACE_EVENT(drv_config,
  		LOCAL_PR_ARG, __entry->changed, CHANDEF_PR_ARG
  	)
  );
