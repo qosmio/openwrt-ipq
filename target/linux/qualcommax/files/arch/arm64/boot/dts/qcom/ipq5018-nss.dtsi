@@ -68,6 +68,7 @@
 		qcom,portid-enabled;
 		qcom,wlan-dataplane-offload-enabled;
 		qcom,pvxlan-enabled;
+		qcom,rmnet_rx-enabled;
 		qcom,udp-st-enabled;
 	};
 
