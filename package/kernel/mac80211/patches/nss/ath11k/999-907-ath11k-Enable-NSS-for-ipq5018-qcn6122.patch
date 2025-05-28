@@ -1,22 +1,22 @@
 --- a/drivers/net/wireless/ath/ath11k/hw.c
 +++ b/drivers/net/wireless/ath/ath11k/hw.c
-@@ -797,6 +815,7 @@ static void ath11k_hw_wcn6855_reo_setup(
-
+@@ -1043,6 +1043,7 @@ static void ath11k_hw_wcn6855_reo_setup(
+ 
  static void ath11k_hw_ipq5018_reo_setup(struct ath11k_base *ab)
  {
 +	u8 frag_dest_ring = HAL_SRNG_RING_ID_REO2SW1;
  	u32 reo_base = HAL_SEQ_WCSS_UMAC_REO_REG;
  	u32 val;
-
-@@ -810,11 +829,14 @@ static void ath11k_hw_ipq5018_reo_setup(
+ 
+@@ -1056,11 +1057,14 @@ static void ath11k_hw_ipq5018_reo_setup(
  		HAL_HASH_ROUTING_RING_SW3 << 24 |
  		HAL_HASH_ROUTING_RING_SW4 << 28;
-
+ 
 +	if (ab->nss.enabled)
 +		frag_dest_ring = HAL_SRNG_REO_ALTERNATE_SELECT;
 +
  	val = ath11k_hif_read32(ab, reo_base + HAL_REO1_GEN_ENABLE);
-
+ 
  	val &= ~HAL_REO1_GEN_ENABLE_FRAG_DST_RING;
  	val |= FIELD_PREP(HAL_REO1_GEN_ENABLE_FRAG_DST_RING,
 -			HAL_SRNG_RING_ID_REO2SW1) |
@@ -24,10 +24,10 @@
  		FIELD_PREP(HAL_REO1_GEN_ENABLE_AGING_LIST_ENABLE, 1) |
  		FIELD_PREP(HAL_REO1_GEN_ENABLE_AGING_FLUSH_ENABLE, 1);
  	ath11k_hif_write32(ab, reo_base + HAL_REO1_GEN_ENABLE, val);
-@@ -828,6 +850,10 @@ static void ath11k_hw_ipq5018_reo_setup(
+@@ -1074,6 +1078,10 @@ static void ath11k_hw_ipq5018_reo_setup(
  	ath11k_hif_write32(ab, reo_base + HAL_REO1_AGING_THRESH_IX_3(ab),
  			   HAL_DEFAULT_REO_TIMEOUT_USEC);
-
+ 
 +	/* REO Dest ring setup is not required in NSS offload case */
 +	if (ab->nss.enabled)
 +		return;
