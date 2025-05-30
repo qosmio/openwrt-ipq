@@ -27,7 +27,7 @@ Signed-off-by: Hari Chandrakanthan <quic_haric@quicinc.com>
 
 --- a/drivers/net/wireless/ath/ath11k/mac.c
 +++ b/drivers/net/wireless/ath/ath11k/mac.c
-@@ -8697,6 +8697,8 @@ static int ath11k_mac_flush_tx_complete(
+@@ -8699,6 +8699,8 @@ static int ath11k_mac_flush_tx_complete(
  		ret = -ETIMEDOUT;
  	}
  
