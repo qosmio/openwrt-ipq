@@ -408,8 +408,6 @@ config wifi-iface '${ap_2g_iface}'
 	option time_advertisement '2'
 	option time_zone 'GMT0'
 	option wnm_sleep_mode '1'
-	option wpa_group_rekey '86400'
-	option max_inactivity '4260'
 
 config wifi-iface '${mesh_iface}'
 	option device '${mesh_radio}'
