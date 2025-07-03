@@ -1,24 +1,54 @@
-# NSS Fork for IPQ807x
-| Branch                                                                                  | mac80211 Version | Notes                                                                 |
-|-----------------------------------------------------------------------------------------|------------------|----------------------------------------------------------------------|
-| [main-nss](https://github.com/qosmio/openwrt-ipq/tree/main-nss)                 |6.12.6|Current with upstream `main` (unstable)|
-| [24.10-nss](https://github.com/qosmio/openwrt-ipq/tree/24.10-nss)               |6.12.6|Current with upstream `openwrt-24.10` (next stable release)|
-| ~~[24.10-nss-mx4300](https://github.com/qosmio/openwrt-ipq/tree/24.10-nss-mx4300)~~ |~~6.12.6~~|~~Current with upstream `openwrt-24.10` [supports Linksys MX4300](https://github.com/openwrt/openwrt/pull/16070)~~ MX4300 is merged upstream in both main and openwrt-24.10|
+# NSS Support Matrix
 
-UPDATE: As of [2024-12-31 support for MX4300 has been merged](https://github.com/openwrt/openwrt/pull/16070) upstream in `main` branch and `main-nss-mx4300` is no longer needed.
+| Feature   | IPQ807x | IPQ60xx | Feature         | IPQ807x | IPQ60xx |
+| --------- | :-----: | :-----: | --------------- | :-----: | :-----: |
+| TUNIPIP6  |   ✅    |   ✅    | RMNET           |  🟨<sup><a href="#fn1">1</a></sup>  |  ⛔<sup><a href="#fn2">2</a></sup>  |
+| PPPOE     |   ✅    |   ✅    | MIRROR          |   ✅    |   ✅    |
+| L2TPV2    |   ✅    |   ✅    | WIFI (AP/STA)   |   ✅    |   ✅    |
+| BRIDGE    |   ✅    |   ✅    | WIFI (WDS)      |  🟨<sup><a href="#fn1">1</a></sup>  |  🟨<sup><a href="#fn1">1</a></sup>  |
+| VLAN      |   ✅    |   ✅    | WIFI (MESH)     |  🟨<sup><a href="#fn1">1</a></sup>  |  🟨<sup><a href="#fn1">1</a></sup>  |
+| MAP_T     |   ✅    |   ✅    | WIFI (AP VLAN)  |  ⚠️<sup><a href="#fn4">4</a></sup>  |  ⚠️<sup><a href="#fn4">4</a></sup>  |
+| TUN6RD    |   ✅    |   ✅    | IPSEC           |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| GRE       |   ✅    |   ✅    | PVXLAN          |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| PPTP      |   ✅    |   ✅    | CLMAP           |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| IGS       |   ✅    |   ✅    | TLS             |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| VXLAN     |   ✅    |   ✅    | CAPWAP          |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
+| MATCH     |   ✅    |   ✅    | DTLS            |   ❌<sup><a href="#fn3">3</a></sup>  |   ❌<sup><a href="#fn3">3</a></sup>  |
 
-UPDATE 2: As of [2025-02-16 support for MX4300 has been merged](https://github.com/openwrt/openwrt/pull/17889) upstream in `openwrt-24.10` branch and `24.10-nss-mx4300` is no longer needed.
+<a id="fn1"></a><sup>1</sup> 🟨 Requires **NSS FW 11.4**  
+<a id="fn2"></a><sup>2</sup> ⛔ Not available on platform  
+<a id="fn3"></a><sup>3</sup> ❌ Not available in NSS FW (11.4–12.5)  
+<a id="fn4"></a><sup>4</sup> ⚠️ Broken in ath11k driver  
+
+> **Note on IPQ50xx:**  
+> Although the IPQ50xx family has NSS offloading capabilities, its architecture is substantially different from IPQ807x/IPQ60xx and requires additional patching. Most of my NSS patches for IPQ50xx have been blind guesswork (I do not own any), and thus far unsuccessful. If anyone with one of these devices gets NSS working, feel free to open a PR.
+
+---
+
+# NSS Branches
+
+| Branch                                                              | Kernel | MAC80211 | Notes                                         |
+|---------------------------------------------------------------------|:------:|:--------:|-----------------------------------------------|
+| [main-nss](https://github.com/qosmio/openwrt-ipq/tree/main-nss)     | 6.12   |  6.12.6  | Current with upstream `main` (unstable)       |
+| [24.10-nss](https://github.com/qosmio/openwrt-ipq/tree/24.10-nss)   | 6.6    |  6.12.6  | Current with upstream `openwrt-24.10` (stable)|
 
 ## Table of Contents
-- [Overview](#overview)
-- [What's NSS?](#whats-nss)
-- [How Does OpenWrt "Offload" Traffic?](#how-does-openwrt-offload-traffic)
-- [How Is NSS Different from OpenWrt's Offloading Options?](#how-is-nss-different-from-openwrts-offloading-options)
-- [Do I Need NSS?](#do-i-need-nss)
-- [OK, I Want NSS. Does My Device Support It?](#ok-i-want-nss-does-my-device-support-it)
-- [Quickstart](#quickstart)
-- [Important Note](#important-note)
-- [Donate](#donate)
+
+* [Overview](#overview)
+* [What's NSS?](#whats-nss)
+* [How Does OpenWrt "Offload" Traffic?](#how-does-openwrt-offload-traffic)
+* [Why Isn't NSS Supported in Vanilla OpenWrt?](#why-isnt-nss-supported-in-vanilla-openwrt)
+* [How Is NSS Different from OpenWrt's Offloading Options?](#how-is-nss-different-from-openwrts-offloading-options)
+
+  * [Key Differences](#key-differences)
+* [Do I Need NSS?](#do-i-need-nss)
+* [OK, I Want NSS. Does My Device Support It?](#ok-i-want-nss-does-my-device-support-it)
+* [Quickstart](#quickstart)
+* [IMPORTANT NOTE!!](#important-note)
+
+  * [1. Packet Steering / Flow Offloading](#1-packet-steering--flow-offloading)
+  * [2. Bridge VLAN Filtering (DSA Syntax)](#2-bridge-vlan-filtering-dsa-syntax)
+* [Donate](#support-the-project)
 
 ---
 
@@ -125,7 +155,9 @@ Supported devices include, but are not limited to:
 ---
 ### Important Note:
 
-Many users report issues after enabling Packet Steering or Flow Offloading (Software or Hardware), often because they are used to these options or they get carried over during a sysupgrade. Even if the setup seems to work initially, it is not optimized for NSS offloading, and you are losing the full benefits of hardware acceleration.
+#### 1. Packet Steering / Flow Offloading
+
+Many users report issues after enabling `Packet Steering` or `Flow Offloading` (software or hardware), often because they are used to these options or they get carried over during a sysupgrade. Even if the setup seems to work initially, it is not optimized for NSS offloading, and you are losing the full benefits of hardware acceleration.
 
 If you plan to use NSS, **start fresh** and **disable all other offloading options**.
 
@@ -138,6 +170,67 @@ By default OpenWrt's offloading is disabled, but if you ever happen to enable it
    uci set network.@device[0].flow_offloading_hw=0
    uci commit network
    ```
+
+#### 2. Bridge VLAN filtering (DSA syntax)
+
+Bridge VLAN filtering is **NOT compatible with NSS WiFi Offload**. That means your config should NOT contain any syntax that uses `config bridge-vlan` or port tagging `list ports 'lan1:u*'`.
+
+INCORRECT ❌:
+```bash
+config bridge-vlan
+	option device 'br-lan'
+	option vlan '1'
+	list ports 'lan1:u*'
+	list ports 'lan2:u*'
+	list ports 'lan3:u*'
+	list ports 'lan4:u*'
+
+config bridge-vlan
+	option device 'br-lan'
+	option vlan '20'
+	list ports 'lan1:t'
+
+config interface 'lan'
+	option device 'br-lan.1'
+	option proto 'static'
+	list ipaddr '192.168.1.1/24'
+
+config interface 'iot'
+	option device 'br-lan.20'
+	option proto 'none'
+```
+
+CORRECT ✅:
+
+```bash
+config device 'br_lan'
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'lan1'
+	list ports 'lan2'
+	list ports 'lan3'
+	list ports 'lan4'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	list ipaddr '192.168.1.1/24'
+
+config device 'br_iot'
+	option type 'bridge'
+	option name 'br-iot'
+	option bridge_empty '1'
+	list ports 'lan1.20'
+
+config interface 'iot'
+	option proto 'static'
+	option device 'br-iot'
+	option ipaddr '192.168.20.1/24'
+	option bridge_empty '1'
+```
+
+For more info [check examples here](nss-setup/example/README.md)
+
 If you have questions or issues, please join the discussion on OpenWrt's forums.
 [Qualcomm NSS Build](https://forum.openwrt.org/t/qualcommax-nss-build)
 
