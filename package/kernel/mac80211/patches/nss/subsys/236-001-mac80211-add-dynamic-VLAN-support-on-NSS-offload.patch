@@ -43,7 +43,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	u8 key[];
 --- a/net/mac80211/cfg.c
 +++ b/net/mac80211/cfg.c
-@@ -540,6 +540,7 @@ static int ieee80211_add_key(struct wiph
+@@ -562,6 +562,7 @@ static int ieee80211_add_key(struct wiph
  		break;
  	case NL80211_IFTYPE_AP:
  	case NL80211_IFTYPE_AP_VLAN:
@@ -53,7 +53,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  			key->conf.flags |= IEEE80211_KEY_FLAG_RX_MGMT;
 --- a/net/mac80211/driver-ops.c
 +++ b/net/mac80211/driver-ops.c
-@@ -135,7 +135,11 @@ int drv_sta_state(struct ieee80211_local
+@@ -141,7 +141,11 @@ int drv_sta_state(struct ieee80211_local
  	might_sleep();
  	lockdep_assert_wiphy(local->hw.wiphy);
  
@@ -102,7 +102,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	key->conf.cipher = cipher;
 --- a/net/mac80211/tx.c
 +++ b/net/mac80211/tx.c
-@@ -4673,16 +4673,25 @@ static void ieee80211_8023_xmit(struct i
+@@ -4683,16 +4683,25 @@ static void ieee80211_8023_xmit(struct i
  				struct ieee80211_key *key, struct sk_buff *skb)
  {
  	struct ieee80211_tx_info *info;
