@@ -83,8 +83,8 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
 +			drv_remove_interface(local, sdata);
  		break;
  	case NL80211_IFTYPE_MONITOR:
- 		if (local->monitors == 0)
-@@ -977,6 +980,7 @@ static bool ieee80211_iftype_supports_hd
+ 		if (local->virt_monitors == 0)
+@@ -975,6 +978,7 @@ static bool ieee80211_iftype_supports_hd
  	switch (iftype) {
  	/* P2P GO and client are mapped to AP/STATION types */
  	case NL80211_IFTYPE_AP:

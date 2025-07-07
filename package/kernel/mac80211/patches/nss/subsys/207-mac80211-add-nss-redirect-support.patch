@@ -76,10 +76,10 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
 +	}
 +#endif
 +
- 	wiphy_lock(sdata->local->hw.wiphy);
- 	wiphy_work_cancel(sdata->local->hw.wiphy, &sdata->activate_links_work);
+ 	guard(wiphy)(sdata->local->hw.wiphy);
  
-@@ -1227,6 +1240,34 @@ void ieee80211_del_virtual_monitor(struc
+ 	wiphy_work_cancel(sdata->local->hw.wiphy, &sdata->activate_links_work);
+@@ -1225,6 +1238,34 @@ void ieee80211_del_virtual_monitor(struc
  	kfree(sdata);
  }
  

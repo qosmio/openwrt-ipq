@@ -129,10 +129,10 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
 +	ath11k_nss_teardown(ab);
 +	ab->nss.enabled = false;
 +
+ 	ath11k_core_pdev_suspend_target(ab);
  	ath11k_hif_irq_disable(ab);
  	ath11k_dp_pdev_free(ab);
- 	ath11k_debugfs_pdev_destroy(ab);
-@@ -1944,6 +1962,10 @@ static int ath11k_core_reconfigure_on_cr
+@@ -2076,6 +2094,10 @@ static int ath11k_core_reconfigure_on_cr
  	int ret;
  
  	mutex_lock(&ab->core_lock);

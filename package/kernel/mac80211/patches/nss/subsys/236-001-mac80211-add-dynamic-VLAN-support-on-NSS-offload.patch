@@ -24,16 +24,16 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
 
 --- a/include/net/mac80211.h
 +++ b/include/net/mac80211.h
-@@ -2227,6 +2227,8 @@ enum ieee80211_key_flags {
+@@ -2246,6 +2246,8 @@ enum ieee80211_key_flags {
   * @tx_pn: PN used for TX keys, may be used by the driver as well if it
   *	needs to do software PN assignment by itself (e.g. due to TSO)
   * @flags: key flags, see &enum ieee80211_key_flags.
 + * @vlan_id: VLAN ID corresponding to the group key.
 + *	For VLAN interfaces 1-4096, 0 for non-vlan interfaces
-  * @keyidx: the key index (0-3)
+  * @keyidx: the key index (0-7)
   * @keylen: key material length
   * @key: key material. For ALG_TKIP the key is encoded as a 256-bit (32 byte)
-@@ -2246,6 +2248,7 @@ struct ieee80211_key_conf {
+@@ -2265,6 +2267,7 @@ struct ieee80211_key_conf {
  	u8 hw_key_idx;
  	s8 keyidx;
  	u16 flags;

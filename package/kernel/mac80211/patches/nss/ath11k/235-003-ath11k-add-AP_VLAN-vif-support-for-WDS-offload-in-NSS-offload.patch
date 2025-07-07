@@ -320,17 +320,15 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	}
  
  	ret = ath11k_mac_vdev_delete(ar, arvif);
-@@ -7099,8 +7275,7 @@ err_vdev_del:
- 	/* Recalc txpower for remaining vdev */
- 	ath11k_mac_txpower_recalc(ar);
+@@ -7105,6 +7281,7 @@ err_vdev_del:
  
--	/* TODO: recal traffic pause state based on the available vdevs */
--
+ 	/* TODO: recalc traffic pause state based on the available vdevs */
+ 
 +unlock:
  	mutex_unlock(&ar->conf_mutex);
  }
  
-@@ -7160,16 +7335,17 @@ static int ath11k_mac_op_ampdu_action(st
+@@ -7164,16 +7341,17 @@ static int ath11k_mac_op_ampdu_action(st
  				      struct ieee80211_ampdu_params *params)
  {
  	struct ath11k *ar = hw->priv;
