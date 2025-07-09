@@ -1,50 +1,49 @@
----
-# **Configuring VLANs with OpenWRT on NSS-Enabled Devices**
-### **Important Note:** No VLAN Filtering for NSS Devices
+# **Overview**
 
-For **NSS setups**, you **cannot** enable VLAN filtering directly because **NSS handles VLAN internally** through the module `kmod-qca-nss-drv-vlan-mgr`.
-Enabling VLAN filtering via the standard method will interfere with the NSS. To check whether it's enabled, follow the steps below.
+Below are few examples of how to setup additional services with NSS.
+# **Table of Contents**
+
+* [VLAN](#vlan)
+  * [<strong>VLAN Tagging (8021q)</strong>](#vlan-tagging-8021q)
+     - [<strong>Example VLAN Setup</strong>](#example-vlan-setup)
+* [WWAN](#wwan)
+     - [<strong>Example WWAN Setup</strong>](#example-vlan-setup)
 
 ---
-### 1. **Check if VLAN Filtering is Enabled**
+
+## VLAN
+
+**Important Note:**
+
+To setup VLANs you must use `8021q` tagging, since `bridge VLAN filtering` is **NOT compatible with NSS WiFi**. That means your config should NOT contain any syntax that uses `option vlan_filtering 1`, `config bridge-vlan` or port tagging `list ports 'lan1:u*'`.
+
+---
+
+**Check if VLAN Filtering is Enabled**
+
 Run the following command to check if VLAN filtering is active:
 ```vim
 uci show network | grep vlan_filtering
 ```
+
 If you see a line like this:
+
 ```vim
 network.@device[0].vlan_filtering='1'
 ```
-VLAN filtering is enabled and you need to **disable it**. Follow the next steps.
 
-### 2. **Disable VLAN Filtering**
-## **VLAN Tagging Restrictions**
+VLAN filtering is enabled and you **must disable it**.
+
 To disable VLAN filtering, run:
 ```vim
 uci del 'network.@device[0].vlan_filtering'
 uci commit network
 service network restart
 ```
-Alternatively, you can reboot your device to apply the changes:
-```vim
-reboot
-```
----
-## **VLAN Tagging Restrictions**
 
-NSS does not support VLAN tagging in the usual way. This means **you can't use tags like `u*` (untagged) or `t` (tagged)** in your configuration.
+### **VLAN Tagging (8021q)**
 
-**Example of what to avoid**:
-```bash
-list ports 'lan1:u*'
-list ports 'lan2:t'
-list ports 'lan3:t'
-```
----
-
-## **How to Set Up VLANs on NSS-Enabled Devices**
-
-Instead of tagging, you'll need to follow a different approach. Here's a step-by-step process:
+Instead of tagging, you'll need to follow a different approach.
 
 1. **Set up VLANs on specific ports.**
 2. **Bridge these VLANs into interfaces** (you can leave them **unmanaged** if needed).
@@ -52,16 +51,16 @@ Instead of tagging, you'll need to follow a different approach. Here's a step-by
 
 ---
 
-## **Example VLAN Setup**
+#### **Example VLAN Setup**
 
-Below is an example of how you can configure your VLANs on an OpenWRT router with **NSS support**. This setup includes:
-
-- A **Primary Network** on VLAN 10 (untagged).
+- A **Primary Network** on VLAN 1 (untagged).
 - A **Guest Network** on VLAN 30.
 - An **IoT Network** on VLAN 40.
 
-### **Network Configuration**
-This is an example of `/etc/config/network`:
+**UCI Config**
+
+`/etc/config/network`:
+
 ```vim
 config interface 'loopback'
     option device 'lo'
@@ -79,55 +78,24 @@ config device
     list ports 'lan2'
     list ports 'lan3'
     list ports 'lan4'
-    list ports 'wan'
     option igmp_snooping '1'
-
-config device
-    option name 'lan1'
-    option macaddr 'AA:BB:CC:DD:EE:FF'
-
-config device
-    option name 'lan2'
-    option macaddr 'AA:BB:CC:DD:EE:FF'
-
-config device
-    option name 'lan3'
-    option macaddr 'AA:BB:CC:DD:EE:FF'
-
-config device
-    option name 'lan4'
-    option macaddr 'AA:BB:CC:DD:EE:FF'
 
 config interface 'lan'
     option device 'br-lan'
     option proto 'static'
-    option ip6assign '60'
     list ipaddr '192.168.1.1/24'
-    option force_link '0'
-
-config device
-    option type '8021q'
-    option ifname 'wan'
-    option vid '30'
-    option name 'wan.30'
-
-config device
-    option type '8021q'
-    option ifname 'wan'
-    option vid '40'
-    option name 'wan.40'
 
 config device
     option type 'bridge'
     option name 'br-iot'
-    list ports 'wan.40'
-    option igmp_snooping '1'
+    list ports 'lan1.40'
+    list ports 'lan2.40'
 
 config device
     option type 'bridge'
     option name 'br-guest'
-    list ports 'wan.30'
-    option igmp_snooping '1'
+    list ports 'lan1.30'
+    list ports 'lan3.30'
 
 config interface 'guest'
     option proto 'none'
@@ -137,152 +105,130 @@ config interface 'iot'
     option proto 'none'
     option device 'br-iot'
 ```
-### **Explanation**
 
-- **Primary Network (VLAN 10)**: Connected through the LAN ports, untagged.
-- **Guest Network (VLAN 30)**: Runs on a bridge called `br-guest` and spans across the **WAN** port tagged with VLAN ID 30.
-- **IoT Network (VLAN 40)**: Runs on a bridge called `br-iot` and uses VLAN ID 40 on the **WAN** port.
----
+`/etc/config/wireless`:
 
-## **WiFi Configuration**
-
-Here is an example of how to configure the WiFi interfaces for different networks in `/etc/config/wireless`:
 ```vim
 config wifi-iface 'lan'
     option device 'radio0'
     option mode 'ap'
     option network 'lan'
     option ssid 'OpenWrt'
-    option encryption 'psk2'
+    option encryption 'psk2+ccmp'
     option key '********'
-    option ocv '0'
-    option bss_transition '1'
-    option dtim_period '3'
 
 config wifi-iface 'guest'
     option device 'radio0'
     option mode 'ap'
     option network 'guest'
     option ssid 'OpenWrt-Guest'
-    option encryption 'psk2'
+    option encryption 'psk2+ccmp'
     option key '********'
-    option ocv '0'
-    option bss_transition '1'
-    option dtim_period '3'
 
 config wifi-iface 'iot'
     option device 'radio0'
     option mode 'ap'
     option network 'iot'
     option ssid 'OpenWrt-IoT'
-    option encryption 'psk2'
+    option encryption 'psk2+ccmp'
     option key '********'
-    option ocv '0'
-    option bss_transition '1'
-    option dtim_period '3'
 ```
-### **Explanation**
 
-- **LAN WiFi**: The `default_radio0` interface is associated with the **Primary Network** on **VLAN 10**.
-- **Guest WiFi**: The `guest` interface is associated with the **Guest Network** on **VLAN 30**.
-- **IoT WiFi**: The `iot` interface is associated with the **IoT Network** on **VLAN 40**.
----
-
-## **Advanced VLAN Setup for DMZ**
-To create a DMZ using **VLAN 30** on **LAN ports 3 and 4**, you can modify your configuration like this:
-```vim
-config device
-    option name 'br-lan'
-    option type 'bridge'
-    list ports 'lan1'
-    list ports 'lan2'
-    list ports 'wan'
-
-config device
-    option type '8021q'
-    option ifname 'wan'
-    option vid '30'
-    option name 'dmz.30'
-
-config device
-    option type 'bridge'
-    option name 'br-dmz'
-    list ports 'dmz.30'
-    list ports 'lan3'
-    list ports 'lan4'
-
-config interface 'dmz'
-    option proto 'none'
-    option device 'br-dmz'
-```
----
-
-## **Advanced VLAN Setup with trunk ports**
-Assuming other managed network devices need to be connected to your NSS-enabled router, you need to configure trunk ports. The setup in the example below consists of:
-
-- A **Primary Network** on VLAN 1.
-- An **IoT Network** on VLAN 10.
-- **LAN ports 1 and 2** set up as trunk ports for **VLAN 1 and 10**
-- **LAN port 3** untagged and bridged into the **Primary Network**
-- **LAN port 4** untagged and bridged into the **IoT Network**
+`/etc/config/firewall`:
 
 ```vim
-config interface 'lan'
-        option device 'br-lan'
-        option proto 'static'
-        option ipaddr '192.168.1.1'
-        option netmask '255.255.255.0'
-        option ip6assign '60'
+config zone
+    option name 'guest'
+    option input 'ACCEPT'
+    option output 'ACCEPT'
+    option forward 'REJECT'
+    list network 'guest'
 
-config interface 'iot'
-        option proto 'static'
-        option device 'br-iot'
-        option ipaddr '192.168.10.1'
-        option netmask '255.255.255.0'
+config forwarding
+    option src 'guest'
+    option dest 'wan'
 
-config interface 'wan'
-        option device 'wan'
-        option proto 'dhcp'
+config zone
+    option name 'iot'
+    option input 'ACCEPT'
+    option output 'ACCEPT'
+    option forward 'REJECT'
+    list network 'iot'
 
-config interface 'wan6'
-        option device 'wan'
-        option proto 'dhcpv6'
+config forwarding
+    option src 'iot'
+    option dest 'wan'
 
-config device
-        option type '8021q'
-        option ifname 'lan1'
-        option vid '1'
-        option name 'lan1.1'
+# To allow communication from lan->guest and iot
 
-config device
-        option type '8021q'
-        option ifname 'lan2'
-        option vid '1'
-        option name 'lan2.1'
+config forwarding
+    option src 'lan'
+    option dest 'guest'
 
-config device
-        option type '8021q'
-        option ifname 'lan1'
-        option vid '10'
-        option name 'lan1.10'
-
-config device
-        option type '8021q'
-        option ifname 'lan2'
-        option vid '10'
-        option name 'lan2.10'
-
-config device
-        option name 'br-lan'
-        option type 'bridge'
-        list ports 'lan1.1'
-        list ports 'lan2.1'
-        list ports 'lan3'
-
-config device
-        option type 'bridge'
-        option name 'br-iot'
-        list ports 'lan1.10'
-        list ports 'lan2.10'
-        list ports 'lan4'
+config forwarding
+    option src 'lan'
+    option dest 'iot'
 ```
+---
+
+## WWAN
+
+IMPORTANT: The `nss-packages` repository does not provide support for `wwan` in the default branch `NSS-12.5-K6.x`. Support for it was removed and moved into an unsupported branch [NSS-12.5-K6.x-wwan](https://github.com/qosmio/nss-packages/tree/NSS-12.5-K6.x-wwan). Please note, any issues opened with these packages will be closed.
+
+To properly set up WWAN (`Arcadyan AW1000`), you need to create the following 3 interfaces:
+
+- **wwan** - Primary interface for the modem connection. (`proto quectel`)
+- **wwan_4** - Interface IPv4 connections. (`proto dhcp`)
+- **wwan_6** - Handle IPv6 connections. (`proto dhcpv6`)
+
+#### **Example WWAN Setup**
+
+**UCI Config**
+
+`/etc/config/network`:
+
+```vim
+config interface 'wwan'
+    option proto 'quectel'
+    option auth 'none'
+    option delay '5'
+    option mtu '1500'
+    option pdptype 'ipv4v6'
+    option device '/dev/cdc-wdm0'
+    option apn 'internet'
+    # Cloudflare DNS servers
+    list dns '1.1.1.1'
+    list dns '1.0.0.1'
+
+config interface 'wwan_4'
+    option proto 'dhcp'
+    option peerdns '1'
+    option defaultroute '1'
+    option metric '10'
+    option device 'wwan0_1'
+
+config interface 'wwan_6'
+    option proto 'dhcpv6'
+    option reqaddress 'try'
+    option reqprefix 'auto'
+    option peerdns '1'
+    option defaultroute '1'
+    option metric '20'
+    option device 'wwan0_1'
+```
+
+`/etc/config/firewall`:
+
+```vim
+config zone
+    option name 'wan'
+    list network 'wwan'
+    list network 'wwan_4'
+    list network 'wwan_6'
+    option input 'REJECT'
+    option output 'ACCEPT'
+    option forward 'REJECT'
+    option masq '1'
+    option mtu_fix '1'
+```
+
