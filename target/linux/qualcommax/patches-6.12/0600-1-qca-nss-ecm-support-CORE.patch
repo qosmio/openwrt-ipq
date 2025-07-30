@@ -760,6 +760,15 @@
  	}
  #undef N
  	return "UNKNOWN_NETDEV_EVENT";
+@@ -12053,7 +12054,7 @@ static void __init net_dev_struct_check(
+ #ifdef CONFIG_NET_XGRESS
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct net_device, net_device_read_tx, tcx_egress);
+ #endif
+-	CACHELINE_ASSERT_GROUP_SIZE(struct net_device, net_device_read_tx, 160);
++	CACHELINE_ASSERT_GROUP_SIZE(struct net_device, net_device_read_tx, 168);
+ 
+ 	/* TXRX read-mostly hotpath */
+ 	CACHELINE_ASSERT_GROUP_MEMBER(struct net_device, net_device_read_txrx, lstats);
 --- a/net/ipv6/addrconf.c
 +++ b/net/ipv6/addrconf.c
 @@ -993,6 +993,7 @@ void inet6_ifa_finish_destroy(struct ine
