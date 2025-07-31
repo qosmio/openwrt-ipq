@@ -1,0 +1,94 @@
+---
+name: Auto Close Non-English Issues
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+  workflow_dispatch:
+
+jobs:
+  detect-language:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install franc-min
+
+      - name: Detect language and close if not English
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          # Create a script to detect language that NEVER exits with non-zero
+          echo "const franc = require('franc-min').franc || require('franc-min');
+
+          const text = process.argv[2] || '';
+
+          try {
+            const lang = franc(text, { minLength: 10 });
+            if (lang !== 'eng') {
+              console.log(\`Text: \${text}\`);
+              console.log(\`Language detected: \${lang}. This is not English.\`);
+              console.log('NON_ENGLISH');
+            } else {
+              console.log('Language detected: English.');
+              console.log('ENGLISH');
+            }
+          } catch (error) {
+            console.error('Error detecting language:', error.message);
+            console.log('ERROR');
+          }" > detect.js
+
+
+          # Parse issue title, body, and number
+          ISSUE_TITLE=$(jq -r '.issue.title' "$GITHUB_EVENT_PATH")
+          ISSUE_BODY=$(jq -r '.issue.body' "$GITHUB_EVENT_PATH")
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+
+
+          # Debug title, body, and number
+          echo "Debug: ISSUE_TITLE='$ISSUE_TITLE'"
+          echo "Debug: ISSUE_BODY='$ISSUE_BODY'"
+          echo "Debug: ISSUE_NUMBER='$ISSUE_NUMBER'"
+
+
+          # Function to check language and close issue if needed
+          check_and_close() {
+            local text="$1"
+            local field_name="$2"
+
+            if [ -n "$text" ] && [ "$text" != "null" ]; then
+              echo "Checking $field_name..."
+
+
+              # Run detection and capture the output
+              result=$(node detect.js "$text" | tail -1)
+
+              if [ "$result" = "NON_ENGLISH" ]; then
+                echo "$field_name is not in English. Closing issue..."
+                gh issue comment "$ISSUE_NUMBER" --body "Sorry, please open issues in English only. The $field_name was detected as non-English. This issue will be closed automatically."
+                gh issue close "$ISSUE_NUMBER"
+                echo "Issue closed successfully due to non-English content."
+              fi
+            else
+              echo "$field_name is empty or null, skipping..."
+            fi
+          }
+
+
+          # Check title first
+          check_and_close "$ISSUE_TITLE" "title"
+
+
+          # Check body second
+          check_and_close "$ISSUE_BODY" "body"
+
+          echo "Workflow completed successfully."
