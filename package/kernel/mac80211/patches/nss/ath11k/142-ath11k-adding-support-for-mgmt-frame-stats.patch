@@ -44,7 +44,7 @@
  	 * FIXME: Driver should not copy struct ieee80211_chanctx_conf,
 --- a/drivers/net/wireless/ath/ath11k/debugfs.c
 +++ b/drivers/net/wireless/ath/ath11k/debugfs.c
-@@ -1589,6 +1589,87 @@ static const struct file_operations fops
+@@ -1467,6 +1467,87 @@ static const struct file_operations fops
  	.llseek = default_llseek,
  };
  
@@ -132,7 +132,7 @@
  int ath11k_debugfs_register(struct ath11k *ar)
  {
  	struct ath11k_base *ab = ar->ab;
-@@ -1621,6 +1702,9 @@ int ath11k_debugfs_register(struct ath11
+@@ -1499,6 +1580,9 @@ int ath11k_debugfs_register(struct ath11
  	debugfs_create_file("fw_dbglog_config", 0600,
  			    ar->debug.debugfs_pdev, ar,
  			    &fops_fw_dbglog);
