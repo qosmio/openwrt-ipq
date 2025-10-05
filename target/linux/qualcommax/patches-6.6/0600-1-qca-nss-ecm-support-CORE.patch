@@ -55,7 +55,7 @@
  #endif
 --- a/include/linux/if_vlan.h
 +++ b/include/linux/if_vlan.h
-@@ -143,7 +143,10 @@ extern struct net_device *__vlan_find_de
+@@ -138,7 +138,10 @@ extern struct net_device *__vlan_find_de
  extern int vlan_for_each(struct net_device *dev,
  			 int (*action)(struct net_device *dev, int vid,
  				       void *arg), void *arg);
@@ -76,9 +76,9 @@
 +
 +} /* QCA NSS ECM support */
 +
- static inline struct net_device *
- __vlan_find_dev_deep_rcu(struct net_device *real_dev,
- 		     __be16 vlan_proto, u16 vlan_id)
+ static inline bool is_vlan_dev(const struct net_device *dev)
+ {
+ 	return false;
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -1761,6 +1761,36 @@ enum netdev_priv_flags {
@@ -153,7 +153,7 @@
  	const struct dst_entry *dst = skb_dst(skb);
 --- a/include/net/neighbour.h
 +++ b/include/net/neighbour.h
-@@ -249,6 +249,13 @@ static inline int neigh_parms_family(str
+@@ -250,6 +250,13 @@ static inline int neigh_parms_family(str
  	return p->tbl->family;
  }
  
@@ -167,7 +167,7 @@
  #define NEIGH_PRIV_ALIGN	sizeof(long long)
  #define NEIGH_ENTRY_SIZE(size)	ALIGN((size), NEIGH_PRIV_ALIGN)
  
-@@ -395,6 +402,11 @@ void __neigh_for_each_release(struct nei
+@@ -396,6 +403,11 @@ void __neigh_for_each_release(struct nei
  			      int (*cb)(struct neighbour *));
  int neigh_xmit(int fam, struct net_device *, const void *, struct sk_buff *);
  
@@ -179,7 +179,7 @@
  struct neigh_seq_state {
  	struct seq_net_private p;
  	struct neigh_table *tbl;
-@@ -600,4 +612,5 @@ static inline void neigh_update_is_route
+@@ -601,4 +613,5 @@ static inline void neigh_update_is_route
  		*notify = 1;
  	}
  }
@@ -201,7 +201,7 @@
  void fib_del_ifaddr(struct in_ifaddr *, struct in_ifaddr *);
 --- a/net/bridge/br_private.h
 +++ b/net/bridge/br_private.h
-@@ -2268,4 +2268,6 @@ void br_do_suppress_nd(struct sk_buff *s
+@@ -2280,4 +2280,6 @@ void br_do_suppress_nd(struct sk_buff *s
  		       u16 vid, struct net_bridge_port *p, struct nd_msg *msg);
  struct nd_msg *br_is_nd_neigh_msg(struct sk_buff *skb, struct nd_msg *m);
  bool br_is_neigh_suppress_enabled(const struct net_bridge_port *p, u16 vid);
@@ -563,7 +563,7 @@
 +/* QCA NSS ECM support - End */
 --- a/net/core/neighbour.c
 +++ b/net/core/neighbour.c
-@@ -1275,6 +1275,22 @@ static void neigh_update_hhs(struct neig
+@@ -1280,6 +1280,22 @@ static void neigh_update_hhs(struct neig
  	}
  }
  
@@ -586,7 +586,7 @@
  /* Generic update routine.
     -- lladdr is new lladdr or NULL, if it is not supplied.
     -- new    is new state.
-@@ -1303,6 +1319,7 @@ static int __neigh_update(struct neighbo
+@@ -1308,6 +1324,7 @@ static int __neigh_update(struct neighbo
  	struct net_device *dev;
  	int err, notify = 0;
  	u8 old;
@@ -594,7 +594,7 @@
  
  	trace_neigh_update(neigh, lladdr, new, flags, nlmsg_pid);
  
-@@ -1317,7 +1334,10 @@ static int __neigh_update(struct neighbo
+@@ -1322,7 +1339,10 @@ static int __neigh_update(struct neighbo
  		new = old;
  		goto out;
  	}
@@ -606,7 +606,7 @@
  	    (old & (NUD_NOARP | NUD_PERMANENT)))
  		goto out;
  
-@@ -1354,7 +1374,12 @@ static int __neigh_update(struct neighbo
+@@ -1359,7 +1379,12 @@ static int __neigh_update(struct neighbo
  		   - compare new & old
  		   - if they are different, check override flag
  		 */
@@ -620,7 +620,7 @@
  		    !memcmp(lladdr, neigh->ha, dev->addr_len))
  			lladdr = neigh->ha;
  	} else {
-@@ -1476,8 +1501,11 @@ out:
+@@ -1481,8 +1506,11 @@ out:
  		neigh_update_gc_list(neigh);
  	if (managed_update)
  		neigh_update_managed_list(neigh);
@@ -635,7 +635,7 @@
  }
 --- a/net/ipv4/fib_trie.c
 +++ b/net/ipv4/fib_trie.c
-@@ -1211,6 +1211,9 @@ static bool fib_valid_key_len(u32 key, u
+@@ -1195,6 +1195,9 @@ static int fib_insert_alias(struct trie
  static void fib_remove_alias(struct trie *t, struct key_vector *tp,
  			     struct key_vector *l, struct fib_alias *old);
  
@@ -645,7 +645,7 @@
  /* Caller must hold RTNL. */
  int fib_table_insert(struct net *net, struct fib_table *tb,
  		     struct fib_config *cfg, struct netlink_ext_ack *extack)
-@@ -1404,6 +1407,9 @@ int fib_table_insert(struct net *net, st
+@@ -1385,6 +1388,9 @@ int fib_table_insert(struct net *net, st
  	rtmsg_fib(RTM_NEWROUTE, htonl(key), new_fa, plen, new_fa->tb_id,
  		  &cfg->fc_nlinfo, nlflags);
  succeeded:
@@ -655,7 +655,7 @@
  	return 0;
  
  out_remove_new_fa:
-@@ -1776,6 +1782,9 @@ int fib_table_delete(struct net *net, st
+@@ -1754,6 +1760,9 @@ int fib_table_delete(struct net *net, st
  	if (fa_to_delete->fa_state & FA_S_ACCESSED)
  		rt_cache_flush(cfg->fc_nlinfo.nl_net);
  
@@ -665,7 +665,7 @@
  	fib_release_info(fa_to_delete->fa_info);
  	alias_free_mem_rcu(fa_to_delete);
  	return 0;
-@@ -2408,6 +2417,20 @@ void __init fib_trie_init(void)
+@@ -2386,6 +2395,20 @@ void __init fib_trie_init(void)
  					   0, SLAB_PANIC | SLAB_ACCOUNT, NULL);
  }
  
@@ -708,7 +708,7 @@
  static inline const void *choose_neigh_daddr(const struct in6_addr *p,
  					     struct sk_buff *skb,
  					     const void *daddr)
-@@ -3876,6 +3879,10 @@ int ip6_route_add(struct fib6_config *cf
+@@ -3910,6 +3913,10 @@ int ip6_route_add(struct fib6_config *cf
  		return PTR_ERR(rt);
  
  	err = __ip6_ins_rt(rt, &cfg->fc_nlinfo, extack);
@@ -719,7 +719,7 @@
  	fib6_info_release(rt);
  
  	return err;
-@@ -3897,6 +3904,9 @@ static int __ip6_del_rt(struct fib6_info
+@@ -3931,6 +3938,9 @@ static int __ip6_del_rt(struct fib6_info
  	err = fib6_del(rt, info);
  	spin_unlock_bh(&table->tb6_lock);
  
@@ -729,7 +729,7 @@
  out:
  	fib6_info_release(rt);
  	return err;
-@@ -6359,6 +6369,20 @@ static int ip6_route_dev_notify(struct n
+@@ -6401,6 +6411,20 @@ static int ip6_route_dev_notify(struct n
  	return NOTIFY_OK;
  }
  
@@ -895,7 +895,7 @@
  	NF_SYSCTL_CT_PROTO_TCP_IGNORE_INVALID_RST,
  	NF_SYSCTL_CT_PROTO_TCP_MAX_RETRANS,
  	NF_SYSCTL_CT_PROTO_TIMEOUT_UDP,
-@@ -834,6 +835,14 @@ static struct ctl_table nf_ct_sysctl_tab
+@@ -838,6 +839,14 @@ static struct ctl_table nf_ct_sysctl_tab
  		.extra1 	= SYSCTL_ZERO,
  		.extra2 	= SYSCTL_ONE,
  	},
@@ -910,7 +910,7 @@
  	[NF_SYSCTL_CT_PROTO_TCP_IGNORE_INVALID_RST] = {
  		.procname	= "nf_conntrack_tcp_ignore_invalid_rst",
  		.maxlen		= sizeof(u8),
-@@ -1035,6 +1044,7 @@ static void nf_conntrack_standalone_init
+@@ -1041,6 +1050,7 @@ static void nf_conntrack_standalone_init
  
  	XASSIGN(LOOSE, &tn->tcp_loose);
  	XASSIGN(LIBERAL, &tn->tcp_be_liberal);
@@ -920,7 +920,7 @@
  #undef XASSIGN
 --- a/net/ipv4/ip_gre.c
 +++ b/net/ipv4/ip_gre.c
-@@ -667,6 +667,8 @@ static netdev_tx_t ipgre_xmit(struct sk_
+@@ -671,6 +671,8 @@ static netdev_tx_t ipgre_xmit(struct sk_
  	if (gre_handle_offloads(skb, !!(tunnel->parms.o_flags & TUNNEL_CSUM)))
  		goto free_skb;
  
@@ -929,7 +929,7 @@
  	__gre_xmit(skb, dev, tnl_params, skb->protocol);
  	return NETDEV_TX_OK;
  
-@@ -750,6 +752,8 @@ static netdev_tx_t gre_tap_xmit(struct s
+@@ -754,6 +756,8 @@ static netdev_tx_t gre_tap_xmit(struct s
  	if (skb_cow_head(skb, dev->needed_headroom))
  		goto free_skb;
  
@@ -938,7 +938,7 @@
  	__gre_xmit(skb, dev, &tunnel->parms.iph, htons(ETH_P_TEB));
  	return NETDEV_TX_OK;
  
-@@ -1337,6 +1341,7 @@ static void ipgre_tap_setup(struct net_d
+@@ -1341,6 +1345,7 @@ static void ipgre_tap_setup(struct net_d
  	dev->netdev_ops	= &gre_tap_netdev_ops;
  	dev->priv_flags &= ~IFF_TX_SKB_SHARING;
  	dev->priv_flags	|= IFF_LIVE_ADDR_CHANGE;
