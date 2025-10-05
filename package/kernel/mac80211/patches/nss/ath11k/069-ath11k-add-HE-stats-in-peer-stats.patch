@@ -42,7 +42,7 @@ Signed-off-by: Miles Hu <milehu@codeaurora.org>
  };
  
  struct ath11k_per_ppdu_tx_stats {
-@@ -641,11 +647,16 @@ struct ath11k_per_peer_tx_stats {
+@@ -643,11 +649,16 @@ struct ath11k_per_peer_tx_stats {
  	u32 succ_bytes;
  	u32 retry_bytes;
  	u32 failed_bytes;

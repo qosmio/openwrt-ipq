@@ -350,7 +350,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  		break;
  	case IEEE80211_AMPDU_TX_START:
  	case IEEE80211_AMPDU_TX_STOP_CONT:
-@@ -9096,6 +9272,7 @@ static void ath11k_mac_op_sta_statistics
+@@ -9176,6 +9352,7 @@ static void ath11k_mac_op_sta_statistics
  {
  	struct ath11k_sta *arsta = ath11k_sta_to_arsta(sta);
  	struct ath11k *ar = arsta->arvif->ar;
@@ -358,7 +358,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	s8 signal;
  	bool db2dbm = test_bit(WMI_TLV_SERVICE_HW_DB2DBM_CONVERSION_SUPPORT,
  			       ar->ab->wmi_ab.svc_map);
-@@ -9155,7 +9332,8 @@ static void ath11k_mac_op_sta_statistics
+@@ -9235,7 +9412,8 @@ static void ath11k_mac_op_sta_statistics
  
  	sinfo->filled |= BIT_ULL(NL80211_STA_INFO_SIGNAL_AVG);
  

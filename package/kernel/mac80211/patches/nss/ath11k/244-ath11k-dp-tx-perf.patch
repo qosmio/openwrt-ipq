@@ -34,7 +34,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  };
  
  struct ath11k_skb_cb {
-@@ -930,10 +931,13 @@ struct ath11k_dp_ring_bp_stats {
+@@ -932,10 +933,13 @@ struct ath11k_dp_ring_bp_stats {
  struct ath11k_soc_dp_tx_err_stats {
  	/* TCL Ring Descriptor unavailable */
  	u32 desc_na[DP_TCL_NUM_RING_MAX];
@@ -448,7 +448,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  			     ath11k_mac_vif_unref, vif);
 --- a/drivers/net/wireless/ath/ath11k/debugfs.c
 +++ b/drivers/net/wireless/ath/ath11k/debugfs.c
-@@ -833,10 +833,22 @@ static ssize_t ath11k_debugfs_dump_soc_d
+@@ -711,10 +711,22 @@ static ssize_t ath11k_debugfs_dump_soc_d
  		len += scnprintf(buf + len, size - len, "ring%d: %u\n",
  				 i, soc_stats->tx_err.desc_na[i]);
  
@@ -507,7 +507,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  	},
  	{
  		.name = "wcn6855 hw2.0",
-@@ -2256,6 +2258,9 @@ int ath11k_core_pre_init(struct ath11k_b
+@@ -2309,6 +2311,9 @@ int ath11k_core_pre_init(struct ath11k_b
  	if (nss_offload)
  		ab->nss.stats_enabled = 1;
  

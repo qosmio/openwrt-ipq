@@ -275,7 +275,7 @@ Signed-off-by: Sowmiya Sree Elavalagan <ssreeela@codeaurora.org>
  static struct ath11k *ath11k_get_ar_on_scan_state(struct ath11k_base *ab,
  						  u32 vdev_id,
  						  enum ath11k_scan_state state)
-@@ -9106,6 +9195,10 @@ static void ath11k_wmi_tlv_op_rx(struct
+@@ -9143,6 +9232,10 @@ static void ath11k_wmi_tlv_op_rx(struct
  	case WMI_WDS_PEER_EVENTID:
  		ath11k_wmi_wds_peer_event(ab, skb);
  		break;
