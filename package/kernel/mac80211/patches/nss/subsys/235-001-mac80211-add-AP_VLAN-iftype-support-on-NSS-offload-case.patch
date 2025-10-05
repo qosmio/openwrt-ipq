@@ -102,13 +102,18 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  		if (!sdata->bss)
  			return;
  
-@@ -1365,10 +1370,17 @@ int ieee80211_do_open(struct wireless_de
+@@ -1365,15 +1370,22 @@ int ieee80211_do_open(struct wireless_de
  				(sdata->u.mntr.flags & MONITOR_FLAG_ACTIVE);
  	switch (sdata->vif.type) {
  	case NL80211_IFTYPE_AP_VLAN:
 -		/* no need to tell driver, but set carrier and chanctx */
  		if (sdata->bss->active) {
- 			ieee80211_link_vlan_copy_chanctx(&sdata->deflink);
+ 			struct ieee80211_link_data *link;
+ 
+ 			for_each_link_data(sdata, link) {
+ 				ieee80211_link_vlan_copy_chanctx(link);
+ 			}
+ 
  			netif_carrier_on(dev);
 +
 +			if (ieee80211_hw_check(&local->hw, SUPPORTS_NSS_OFFLOAD)) {

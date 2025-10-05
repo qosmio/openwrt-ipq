@@ -108,10 +108,11 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
   * @NUM_IEEE80211_HW_FLAGS: number of hardware flags, used for sizing arrays
   */
  enum ieee80211_hw_flags {
-@@ -2890,6 +2918,7 @@ enum ieee80211_hw_flags {
+@@ -2890,7 +2918,8 @@ enum ieee80211_hw_flags {
  	IEEE80211_HW_DISALLOW_PUNCTURING,
  	IEEE80211_HW_DISALLOW_PUNCTURING_5GHZ,
  	IEEE80211_HW_HANDLES_QUIET_CSA,
+	IEEE80211_HW_STRICT,
 +	IEEE80211_HW_SUPPORTS_NSS_OFFLOAD,
  
  	/* keep last, obviously */
@@ -140,10 +141,11 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  	void (*stop_ap)(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 --- a/net/mac80211/debugfs.c
 +++ b/net/mac80211/debugfs.c
-@@ -509,6 +509,7 @@ static const char *hw_flag_names[] = {
+@@ -509,7 +509,8 @@ static const char *hw_flag_names[] = {
  	FLAG(DISALLOW_PUNCTURING),
  	FLAG(DISALLOW_PUNCTURING_5GHZ),
  	FLAG(HANDLES_QUIET_CSA),
+	FLAG(STRICT),
 +	FLAG(SUPPORTS_NSS_OFFLOAD),
  #undef FLAG
  };

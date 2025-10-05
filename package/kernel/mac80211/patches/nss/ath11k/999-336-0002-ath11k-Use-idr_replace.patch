@@ -119,7 +119,7 @@ Signed-off-by: Tamizh Chelvam <quic_tamizhr@quicinc.com>
  	struct hal_reo_dest_ring *desc;
  	enum hal_reo_dest_ring_push_reason push_reason;
 +	u32 *rx_buf_id[MAX_RADIOS];
- 	u32 cookie;
+ 	u32 cookie, info0, rx_msdu_info0, rx_mpdu_info0;
  	int i;
  
 -	for (i = 0; i < MAX_RADIOS; i++)
