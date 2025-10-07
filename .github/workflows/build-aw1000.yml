@@ -1,0 +1,44 @@
+name: Build OpenWrt 24.10 NSS for Arcadyan AW1000
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ aw1000-24.10 ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout your fork
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential gcc g++ git python3 gawk unzip file wget \
+            libncurses5-dev zlib1g-dev gettext libssl-dev xsltproc rsync ccache
+
+      - name: Setup feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Load AW1000 config
+        run: |
+          cp nss-setup/config-nss.seed .config
+          echo 'CONFIG_TARGET_qualcommax_ipq807x_DEVICE_arcadyan_aw1000=y' >> .config
+          make defconfig
+
+      - name: Download sources
+        run: make download -j$(nproc)
+
+      - name: Build firmware
+        run: make -j$(nproc) V=s
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: aw1000-firmware
+          path: bin/targets/**
