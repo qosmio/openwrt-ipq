@@ -111,7 +111,7 @@ Signed-off-by: Muna Sinada <msinada@codeaurora.org>
  	__NL80211_ATTR_AFTER_LAST,
 --- a/net/mac80211/mlme.c
 +++ b/net/mac80211/mlme.c
-@@ -10804,3 +10804,15 @@ void ieee80211_process_epcs_teardown(str
+@@ -10863,3 +10863,15 @@ void ieee80211_process_epcs_teardown(str
  	ieee80211_epcs_teardown(sdata);
  	ieee80211_epcs_changed(sdata, false);
  }
