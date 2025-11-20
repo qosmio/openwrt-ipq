@@ -34,7 +34,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  };
  
  struct ath11k_skb_cb {
-@@ -932,10 +933,13 @@ struct ath11k_dp_ring_bp_stats {
+@@ -937,10 +938,13 @@ struct ath11k_dp_ring_bp_stats {
  struct ath11k_soc_dp_tx_err_stats {
  	/* TCL Ring Descriptor unavailable */
  	u32 desc_na[DP_TCL_NUM_RING_MAX];
@@ -413,7 +413,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  
 --- a/drivers/net/wireless/ath/ath11k/mac.c
 +++ b/drivers/net/wireless/ath/ath11k/mac.c
-@@ -6486,12 +6486,22 @@ static void ath11k_mac_op_tx(struct ieee
+@@ -6562,12 +6562,22 @@ static void ath11k_mac_op_tx(struct ieee
  	if (control->sta)
  		arsta = ath11k_sta_to_arsta(control->sta);
  
@@ -437,7 +437,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  		ieee80211_free_txskb(ar->hw, skb);
  		return;
  	}
-@@ -7456,7 +7466,7 @@ err_vdev_del:
+@@ -7543,7 +7553,7 @@ err_vdev_del:
  	idr_for_each(&ar->txmgmt_idr,
  		     ath11k_mac_vif_txmgmt_idr_remove, vif);
  
@@ -507,7 +507,7 @@ Signed-off-by: P Praneesh <ppranees@codeaurora.org>
  	},
  	{
  		.name = "wcn6855 hw2.0",
-@@ -2309,6 +2311,9 @@ int ath11k_core_pre_init(struct ath11k_b
+@@ -2310,6 +2312,9 @@ int ath11k_core_pre_init(struct ath11k_b
  	if (nss_offload)
  		ab->nss.stats_enabled = 1;
  

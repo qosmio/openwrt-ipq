@@ -56,7 +56,7 @@ Signed-off-by: Rameshkumar Sundaram <ramess@codeaurora.org>
  static void ath11k_ahb_free_resources(struct ath11k_base *ab)
 --- a/drivers/net/wireless/ath/ath11k/core.c
 +++ b/drivers/net/wireless/ath/ath11k/core.c
-@@ -2386,6 +2386,7 @@ struct ath11k_base *ath11k_core_alloc(st
+@@ -2387,6 +2387,7 @@ struct ath11k_base *ath11k_core_alloc(st
  
  	mutex_init(&ab->core_lock);
  	mutex_init(&ab->tbl_mtx_lock);
@@ -64,7 +64,7 @@ Signed-off-by: Rameshkumar Sundaram <ramess@codeaurora.org>
  	spin_lock_init(&ab->base_lock);
  	mutex_init(&ab->vdev_id_11d_lock);
  	init_completion(&ab->reset_complete);
-@@ -2399,6 +2400,8 @@ struct ath11k_base *ath11k_core_alloc(st
+@@ -2400,6 +2401,8 @@ struct ath11k_base *ath11k_core_alloc(st
  	INIT_WORK(&ab->restart_work, ath11k_core_restart);
  	INIT_WORK(&ab->update_11d_work, ath11k_update_11d);
  	INIT_WORK(&ab->reset_work, ath11k_core_reset);
@@ -83,7 +83,7 @@ Signed-off-by: Rameshkumar Sundaram <ramess@codeaurora.org>
  #include "fw.h"
  
  #define SM(_v, _f) (((_v) << _f##_LSB) & _f##_MASK)
-@@ -1148,6 +1149,9 @@ struct ath11k_base {
+@@ -1153,6 +1154,9 @@ struct ath11k_base {
  
  	u32 max_ast_index;
  	u32 num_ast_entries;
