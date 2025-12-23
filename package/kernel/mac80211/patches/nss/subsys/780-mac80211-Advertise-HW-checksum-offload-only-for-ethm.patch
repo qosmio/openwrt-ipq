@@ -78,7 +78,7 @@ Signed-off-by: Tamizh Chelvam Raja <quic_tamizhr@quicinc.com>
  
 --- a/net/mac80211/iface.c
 +++ b/net/mac80211/iface.c
-@@ -2288,6 +2288,11 @@ int ieee80211_if_add(struct ieee80211_lo
+@@ -2305,6 +2305,11 @@ int ieee80211_if_add(struct ieee80211_lo
  
  		ndev->features |= local->hw.netdev_features;
  		ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
@@ -101,7 +101,7 @@ Signed-off-by: Tamizh Chelvam Raja <quic_tamizhr@quicinc.com>
  static int mesh_allocated;
  static struct kmem_cache *rm_cache;
  
-@@ -779,7 +781,7 @@ bool ieee80211_mesh_xmit_fast(struct iee
+@@ -782,7 +784,7 @@ bool ieee80211_mesh_xmit_fast(struct iee
  	if (skb->sk && skb_shinfo(skb)->tx_flags & SKBTX_WIFI_STATUS)
  		return false;
  

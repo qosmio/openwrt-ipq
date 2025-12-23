@@ -2940,7 +2940,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  struct wmi_peer_set_param_cmd {
  	u32 tlv_header;
  	u32 vdev_id;
-@@ -6391,6 +6422,8 @@ int ath11k_wmi_send_peer_create_cmd(stru
+@@ -6396,6 +6427,8 @@ int ath11k_wmi_send_peer_create_cmd(stru
  int ath11k_wmi_vdev_set_param_cmd(struct ath11k *ar, u32 vdev_id,
  				  u32 param_id, u32 param_value);
  
@@ -2998,7 +2998,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  int ath11k_dp_pdev_reo_setup(struct ath11k_base *ab);
 --- a/drivers/net/wireless/ath/ath11k/mac.c
 +++ b/drivers/net/wireless/ath/ath11k/mac.c
-@@ -6328,6 +6328,16 @@ static int ath11k_mac_op_start(struct ie
+@@ -6377,6 +6377,16 @@ static int ath11k_mac_op_start(struct ie
  		goto err;
  	}
  
@@ -3017,7 +3017,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  	/* TODO: Do we need to enable ANI? */
 --- a/drivers/net/wireless/ath/ath11k/core.h
 +++ b/drivers/net/wireless/ath/ath11k/core.h
-@@ -903,6 +903,8 @@ struct ath11k_soc_dp_tx_err_stats {
+@@ -904,6 +904,8 @@ struct ath11k_soc_dp_tx_err_stats {
  	 * idr unavailable etc.
  	 */
  	atomic_t misc_fail;
@@ -3026,7 +3026,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  };
  
  struct ath11k_soc_dp_stats {
-@@ -949,6 +951,7 @@ struct ath11k_base {
+@@ -950,6 +952,7 @@ struct ath11k_base {
  	struct ath11k_htc htc;
  
  	struct ath11k_dp dp;
@@ -3034,7 +3034,7 @@ Signed-off-by: Sriram R <srirrama@codeaurora.org>
  
  	void __iomem *mem;
  	void __iomem *mem_ce;
-@@ -994,6 +997,7 @@ struct ath11k_base {
+@@ -995,6 +998,7 @@ struct ath11k_base {
  	struct list_head peers;
  	wait_queue_head_t peer_mapping_wq;
  	u8 mac_addr[ETH_ALEN];

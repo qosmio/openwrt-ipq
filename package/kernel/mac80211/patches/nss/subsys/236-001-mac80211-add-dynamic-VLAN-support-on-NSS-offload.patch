@@ -43,7 +43,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	u8 key[];
 --- a/net/mac80211/cfg.c
 +++ b/net/mac80211/cfg.c
-@@ -540,6 +540,7 @@ static int ieee80211_add_key(struct wiph
+@@ -554,6 +554,7 @@ static int ieee80211_add_key(struct wiph
  		break;
  	case NL80211_IFTYPE_AP:
  	case NL80211_IFTYPE_AP_VLAN:
@@ -91,7 +91,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  		/*
  		 * The driver doesn't know anything about VLAN interfaces.
  		 * Hence, don't send GTKs for VLAN interfaces to the driver.
-@@ -606,6 +607,8 @@ ieee80211_key_alloc(u32 cipher, int idx,
+@@ -612,6 +613,8 @@ ieee80211_key_alloc(u32 cipher, int idx,
  	 */
  	key->conf.flags = 0;
  	key->flags = 0;

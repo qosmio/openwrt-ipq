@@ -41,7 +41,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
   * This is enough for the radiotap header.
 --- a/net/mac80211/cfg.c
 +++ b/net/mac80211/cfg.c
-@@ -2217,7 +2217,13 @@ static int ieee80211_change_station(stru
+@@ -2231,7 +2231,13 @@ static int ieee80211_change_station(stru
  
  			rcu_assign_pointer(vlansdata->u.vlan.sta, sta);
  			__ieee80211_check_fast_rx_iface(vlansdata);
@@ -74,7 +74,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	trace_drv_add_interface(local, sdata);
 --- a/net/mac80211/iface.c
 +++ b/net/mac80211/iface.c
-@@ -703,6 +703,9 @@ static void ieee80211_do_stop(struct iee
+@@ -720,6 +720,9 @@ static void ieee80211_do_stop(struct iee
  
  	switch (sdata->vif.type) {
  	case NL80211_IFTYPE_AP_VLAN:
@@ -84,7 +84,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  		break;
  	case NL80211_IFTYPE_MONITOR:
  		if (local->monitors == 0)
-@@ -986,6 +989,7 @@ static bool ieee80211_iftype_supports_hd
+@@ -1003,6 +1006,7 @@ static bool ieee80211_iftype_supports_hd
  	switch (iftype) {
  	/* P2P GO and client are mapped to AP/STATION types */
  	case NL80211_IFTYPE_AP:
@@ -92,7 +92,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  	case NL80211_IFTYPE_STATION:
  		return true;
  	default:
-@@ -1040,7 +1044,8 @@ static void ieee80211_set_vif_encap_ops(
+@@ -1057,7 +1061,8 @@ static void ieee80211_set_vif_encap_ops(
  	struct ieee80211_sub_if_data *bss = sdata;
  	bool enabled;
  
@@ -102,7 +102,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  		if (!sdata->bss)
  			return;
  
-@@ -1386,6 +1391,14 @@ int ieee80211_do_open(struct wireless_de
+@@ -1403,6 +1408,14 @@ int ieee80211_do_open(struct wireless_de
  			}
  
  			netif_carrier_on(dev);
@@ -192,7 +192,7 @@ Signed-off-by: Sathishkumar Muruganandam <murugana@codeaurora.org>
  		}
 --- a/net/mac80211/mlme.c
 +++ b/net/mac80211/mlme.c
-@@ -5736,7 +5736,8 @@ static bool ieee80211_assoc_success(stru
+@@ -5737,7 +5737,8 @@ static bool ieee80211_assoc_success(stru
  	 * If we're using 4-addr mode, let the AP know that we're
  	 * doing so, so that it can create the STA VLAN on its side
  	 */

@@ -136,7 +136,7 @@ Signed-off-by: Ramya Gnanasekar <rgnanase@codeaurora.org>
  ATH11K_TRACING=
 --- a/drivers/net/wireless/ath/ath11k/core.h
 +++ b/drivers/net/wireless/ath/ath11k/core.h
-@@ -946,6 +946,11 @@ enum ath11k_pm_policy {
+@@ -947,6 +947,11 @@ enum ath11k_pm_policy {
  	ATH11K_PM_WOW,
  };
  
@@ -148,7 +148,7 @@ Signed-off-by: Ramya Gnanasekar <rgnanase@codeaurora.org>
  /* Master structure to hold the hw data which may be used in core module */
  struct ath11k_base {
  	enum ath11k_hw_rev hw_rev;
-@@ -1103,6 +1108,8 @@ struct ath11k_base {
+@@ -1104,6 +1109,8 @@ struct ath11k_base {
  		DECLARE_BITMAP(fw_features, ATH11K_FW_FEATURE_COUNT);
  	} fw;
  
@@ -314,7 +314,7 @@ Signed-off-by: Ramya Gnanasekar <rgnanase@codeaurora.org>
  		.support_dual_stations = false,
  	},
  	{
-@@ -863,6 +869,21 @@ static const struct dmi_system_id ath11k
+@@ -905,6 +911,21 @@ static const struct dmi_system_id ath11k
  	{}
  };
  

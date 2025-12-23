@@ -31,7 +31,7 @@ Signed-off-by: Muna Sinada <msinada@codeaurora.org>
 
 --- a/include/net/cfg80211.h
 +++ b/include/net/cfg80211.h
-@@ -9769,4 +9769,15 @@ ssize_t wiphy_locked_debugfs_write(struc
+@@ -9847,4 +9847,15 @@ ssize_t wiphy_locked_debugfs_write(struc
  				   void *data);
  #endif
  
@@ -111,7 +111,7 @@ Signed-off-by: Muna Sinada <msinada@codeaurora.org>
  	__NL80211_ATTR_AFTER_LAST,
 --- a/net/mac80211/mlme.c
 +++ b/net/mac80211/mlme.c
-@@ -9436,3 +9436,15 @@ void ieee80211_disable_rssi_reports(stru
+@@ -9437,3 +9437,15 @@ void ieee80211_disable_rssi_reports(stru
  	_ieee80211_enable_rssi_reports(sdata, 0, 0);
  }
  EXPORT_SYMBOL(ieee80211_disable_rssi_reports);
@@ -211,7 +211,7 @@ Signed-off-by: Muna Sinada <msinada@codeaurora.org>
  int __init nl80211_init(void)
 --- a/net/wireless/trace.h
 +++ b/net/wireless/trace.h
-@@ -3977,6 +3977,46 @@ TRACE_EVENT(cfg80211_update_owe_info_eve
+@@ -3998,6 +3998,46 @@ TRACE_EVENT(cfg80211_update_owe_info_eve
  		  __entry->assoc_link_id, __entry->peer_mld_addr)
  );
  
