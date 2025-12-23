@@ -341,7 +341,7 @@
  
  struct Qdisc *qdisc_lookup_rcu(struct net_device *dev, u32 handle)
  {
-@@ -2405,4 +2406,26 @@ static int __init pktsched_init(void)
+@@ -2395,4 +2396,26 @@ static int __init pktsched_init(void)
  	return 0;
  }
  
@@ -370,7 +370,7 @@
  subsys_initcall(pktsched_init);
 --- a/net/sched/sch_generic.c
 +++ b/net/sched/sch_generic.c
-@@ -1083,6 +1083,7 @@ static void __qdisc_destroy(struct Qdisc
+@@ -1086,6 +1086,7 @@ static void __qdisc_destroy(struct Qdisc
  
  	call_rcu(&qdisc->rcu, qdisc_free_cb);
  }
