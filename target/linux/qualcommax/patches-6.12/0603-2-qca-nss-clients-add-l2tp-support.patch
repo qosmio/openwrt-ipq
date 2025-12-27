@@ -200,13 +200,13 @@
 +
 +	tunnel = session->tunnel;
 +	if (!tunnel) {
-+		sock_put(sk);
++		l2tp_session_put(session);
 +		return -1;
 +	}
 +
 +	version = tunnel->version;
 +
-+	sock_put(sk);
++	l2tp_session_put(session);
 +
 +	return version;
 +}
@@ -228,7 +228,7 @@
 +
 +	tunnel = session->tunnel;
 +	if (!tunnel) {
-+		sock_put(sk);
++		l2tp_session_put(session);
 +		return err;
 +	}
 +	isk = inet_sk(tunnel->sock);
@@ -243,7 +243,7 @@
 +	addr->local_addr.sin_addr.s_addr = isk->inet_saddr;
 +	addr->remote_addr.sin_addr.s_addr = isk->inet_daddr;
 +
-+	sock_put(sk);
++	l2tp_session_put(session);
 +	return 0;
 +}
 +
