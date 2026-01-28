@@ -2418,7 +2418,7 @@
  {
 --- a/drivers/net/wireless/ath/ath11k/wmi.c
 +++ b/drivers/net/wireless/ath/ath11k/wmi.c
-@@ -7630,10 +7630,12 @@ static void ath11k_wmi_event_peer_sta_ps
+@@ -7636,10 +7636,12 @@ static void ath11k_wmi_event_peer_sta_ps
  	struct ieee80211_sta *sta;
  	struct ath11k_peer *peer;
  	struct ath11k *ar;
@@ -2431,7 +2431,7 @@
  
  	tb = ath11k_wmi_tlv_parse_alloc(ab, skb, GFP_ATOMIC);
  	if (IS_ERR(tb)) {
-@@ -7657,69 +7659,65 @@ static void ath11k_wmi_event_peer_sta_ps
+@@ -7663,69 +7665,65 @@ static void ath11k_wmi_event_peer_sta_ps
  
  	rcu_read_lock();
  
@@ -2543,7 +2543,7 @@
  	rcu_read_unlock();
  	kfree(tb);
  }
-@@ -7834,9 +7832,9 @@ static void ath11k_mgmt_rx_event(struct
+@@ -7840,9 +7838,9 @@ static void ath11k_mgmt_rx_event(struct
  
  	spin_lock_bh(&ab->base_lock);
  
@@ -2555,7 +2555,7 @@
  	if (!peer) {
  		spin_unlock_bh(&ab->base_lock);
  		goto skip_mgmt_stats;
-@@ -8065,8 +8063,10 @@ static void ath11k_peer_sta_kickout_even
+@@ -8071,8 +8069,10 @@ static void ath11k_peer_sta_kickout_even
  	struct wmi_peer_sta_kickout_arg arg = {};
  	struct ieee80211_sta *sta;
  	struct ath11k_peer *peer;
@@ -2567,7 +2567,7 @@
  
  	if (ath11k_pull_peer_sta_kickout_ev(ab, skb, &arg) != 0) {
  		ath11k_warn(ab, "failed to extract peer sta kickout event");
-@@ -8077,40 +8077,30 @@ static void ath11k_peer_sta_kickout_even
+@@ -8083,40 +8083,30 @@ static void ath11k_peer_sta_kickout_even
  
  	spin_lock_bh(&ab->base_lock);
  
