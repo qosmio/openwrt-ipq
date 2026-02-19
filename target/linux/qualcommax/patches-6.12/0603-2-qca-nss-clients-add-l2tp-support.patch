@@ -218,7 +218,7 @@
  
 --- a/drivers/net/ppp/ppp_generic.c
 +++ b/drivers/net/ppp/ppp_generic.c
-@@ -3005,6 +3005,20 @@ char *ppp_dev_name(struct ppp_channel *c
+@@ -3005,6 +3005,22 @@ char *ppp_dev_name(struct ppp_channel *c
  	return name;
  }
  
@@ -227,12 +227,14 @@
 +{
 +	struct channel *pch = chan->ppp;
 +	int ifindex = 0;
++	struct ppp *ppp;
 +
 +	if (pch) {
-+		read_lock_bh(&pch->upl);
-+		if (pch->ppp && pch->ppp->dev)
-+			ifindex = pch->ppp->dev->ifindex;
-+		read_unlock_bh(&pch->upl);
++		rcu_read_lock();
++		ppp = rcu_dereference(pch->ppp);
++		if (ppp && ppp->dev)
++			ifindex = ppp->dev->ifindex;
++		rcu_read_unlock();
 +	}
 +	return ifindex;
 +}
