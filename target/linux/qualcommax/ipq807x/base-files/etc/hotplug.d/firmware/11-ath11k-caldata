@@ -102,6 +102,7 @@ case "$FIRMWARE" in
 		ath11k_set_macflag
 		;;
 	prpl,haze|\
+	cradlepoint,e320|\
 	spectrum,sax1v1k)
 		caldata_extract_mmc "0:ART" 0x1000 0x20000
 		;;

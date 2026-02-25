@@ -235,6 +235,7 @@ platform_do_upgrade() {
 		remove_oem_ubi_volume ubifs
 		nand_do_upgrade "$1"
 		;;
+	cradlepoint,e320|\
 	prpl,haze|\
 	qnap,301w)
 		CI_KERNPART="0:HLOS"

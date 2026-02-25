@@ -150,6 +150,18 @@ define Device/compex_wpq873
 endef
 TARGET_DEVICES += compex_wpq873
 
+define Device/cradlepoint_e320
+	$(call Device/FitImage)
+	$(call Device/EmmcImage)
+	DEVICE_VENDOR := Cradlepoint
+	DEVICE_MODEL := E320
+	DEVICE_DTS_CONFIG := config@hk07
+	KERNEL_SIZE := 6144k
+	SOC := ipq8072
+	DEVICE_PACKAGES := kmod-fs-f2fs f2fs-tools ipq-wifi-cradlepoint_e320
+endef
+TARGET_DEVICES += cradlepoint_e320
+
 define Device/dynalink_dl-wrx36
 	$(call Device/FitImage)
 	$(call Device/UbiFit)
