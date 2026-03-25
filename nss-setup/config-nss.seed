@@ -155,10 +155,14 @@ CONFIG_ATH11K_THERMAL=n
 CONFIG_PACKAGE_libustream-openssl=y
 CONFIG_PACKAGE_libustream-mbedtls=n
 CONFIG_PACKAGE_libopenssl=y
+# Use OpenSSL for apk (package manager)
+# CONFIG_PACKAGE_apk-mbedtls is not set
+CONFIG_PACKAGE_apk-openssl=y
 CONFIG_LUA_ECO_OPENSSL=y
 CONFIG_LUA_ECO_MBEDTLS=n
 # Optimize OpenSSL for speed over size
 CONFIG_OPENSSL_OPTIMIZE_SPEED=y
+
 
 #####################################################################
 # Wireless Configuration
