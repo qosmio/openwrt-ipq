@@ -2473,7 +2473,7 @@ Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@codeaurora.org>
  	vif = wdev_to_ieee80211_vif(wdev);
  	if (!vif) {
  		dev_kfree_skb_any(skb);
-@@ -906,23 +1941,81 @@ ath11k_nss_ext_vdev_data_receive(struct
+@@ -906,23 +1941,95 @@ ath11k_nss_ext_vdev_data_receive(struct
  	}
  
  	ab = arvif->ar->ab;
@@ -2495,6 +2495,7 @@ Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@codeaurora.org>
 +	struct ath11k_skb_rxcb *rxcb;
 +	struct ath11k_vif *arvif;
 +	struct wireless_dev *wdev = (struct wireless_dev *)dev;
++	int metadata_len;
  
 -	/* log the original skb received from nss */
 -	ath11k_dbg_dump(ab, ATH11K_DBG_DP_RX, "", "dp rx msdu from nss ext : ",
@@ -2518,8 +2519,20 @@ Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@codeaurora.org>
 -	ath11k_nss_deliver_rx(arvif->vif, skb, eth_decap, data_offs, napi);
 +	ab = arvif->ar->ab;
 +
-+	wifi_metadata = (struct nss_wifi_vdev_per_packet_metadata *)(skb->head +
-+			NSS_WIFI_VDEV_PER_PACKET_METADATA_OFFSET);
++	metadata_len = NSS_WIFI_VDEV_PER_PACKET_METADATA_OFFSET +
++		       sizeof(struct nss_wifi_vdev_per_packet_metadata);
++
++	/* Special frames from NSS must carry per-packet metadata in headroom. */
++	if (!(metadata_len < skb_headroom(skb))) {
++		dev_kfree_skb_any(skb);
++		return;
++	}
++
++	dma_unmap_single(ab->dev, virt_to_phys(skb->head), metadata_len,
++			 DMA_FROM_DEVICE);
++
++	wifi_metadata = (struct nss_wifi_vdev_per_packet_metadata *)
++			(skb->head + NSS_WIFI_VDEV_PER_PACKET_METADATA_OFFSET);
 +
 +	ath11k_dbg(ab, ATH11K_DBG_NSS_MESH,
 +		   "dp special data from nss on mesh link vap: pkt_type %d\n",
@@ -2537,6 +2550,7 @@ Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@codeaurora.org>
 +		dev_kfree_skb_any(skb);
 +		break;
 +	case NSS_WIFI_VDEV_EXT_DATA_PKT_TYPE_MCBC_RX:
++	case NSS_WIFI_VDEV_MESH_EXT_DATA_PKT_TYPE_RX_MCAST_EXC:
 +		ath11k_dbg_dump(ab, ATH11K_DBG_DP_RX, "",
 +				"mcast packet exception from nss on mesh link vdev: ",
 +				skb->data, skb->len);
