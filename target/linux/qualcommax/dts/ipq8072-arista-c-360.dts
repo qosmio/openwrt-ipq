@@ -1,0 +1,557 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
+/dts-v1/;
+
+#include "ipq8074.dtsi"
+#include "ipq8074-hk-cpu.dtsi"
+#include "ipq8074-ess.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	model = "Arista C-360";
+	compatible = "arista,c-360", "qcom,ipq8074", "qcom,ipq8074-hk09";
+
+	aliases {
+		serial0 = &blsp1_uart5;
+		serial1 = &blsp1_uart3;
+		ethernet0 = &dp5_syn;
+		ethernet1 = &dp6_syn;
+		label-mac-device = &dp5_syn;
+		led-boot = &led_power_green;
+		led-failsafe = &led_power_green;
+		led-running = &led_power_green;
+		led-upgrade = &led_power_green;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs-append = " root=/dev/ubiblock0_1";
+	};
+
+	keys {
+		compatible = "gpio-keys";
+		pinctrl-0 = <&button_pins>;
+		pinctrl-names = "default";
+
+		wps {
+			label = "wps";
+			gpios = <&tlmm 42 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_WPS_BUTTON>;
+			debounce-interval = <60>;
+		};
+	};
+
+	led-spi {
+		compatible = "spi-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		sck-gpios = <&tlmm 18 GPIO_ACTIVE_HIGH>;
+		mosi-gpios = <&tlmm 19 GPIO_ACTIVE_HIGH>;
+
+		led_gpio: led-gpio@0 {
+			compatible = "fairchild,74hc595";
+			reg = <0>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			registers-number = <2>;
+			spi-max-frequency = <1000000>;
+			enable-gpios = <&tlmm 20 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	/*
+	 * The front panel LEDs hang off a 74LV164 shift register driven by the
+	 * IPQ8074 LEDC pins, wired like the Arcadyan AW1000.  Two cascaded
+	 * 8-bit registers give 16 outputs, of which nine reach an LED; the
+	 * mapping was read off the panel one bit at a time.  Power, LAN1 and
+	 * LAN2 are green/red pairs, the WiFi bands are green only, and outputs
+	 * 7 and 10 to 15 drive nothing.
+	 */
+	leds {
+		compatible = "gpio-leds";
+
+		led_power_green: led-0 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_POWER;
+			gpios = <&led_gpio 0 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		led-1 {
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_POWER;
+			gpios = <&led_gpio 1 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-2 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_WLAN_2GHZ;
+			gpios = <&led_gpio 2 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-3 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_WLAN_5GHZ;
+			gpios = <&led_gpio 3 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-4 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_WLAN_6GHZ;
+			gpios = <&led_gpio 4 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-5 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <1>;
+			gpios = <&led_gpio 5 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-6 {
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <1>;
+			gpios = <&led_gpio 6 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-8 {
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <2>;
+			gpios = <&led_gpio 8 GPIO_ACTIVE_HIGH>;
+		};
+
+		led-9 {
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <2>;
+			gpios = <&led_gpio 9 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&tlmm {
+	mdio_pins: mdio-pins {
+		mdc {
+			pins = "gpio68";
+			function = "mdc";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+
+		mdio {
+			pins = "gpio69";
+			function = "mdio";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+
+		phy0-pins {
+			pins = "gpio25";
+			function = "gpio";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+
+		phy1-pins {
+			pins = "gpio44";
+			function = "gpio";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+
+	};
+
+	button_pins: button-pins {
+		wps-button {
+			pins = "gpio42";
+			function = "gpio";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
+
+	/*
+	 * Enables the USB port's power rail. The vendor firmware drives this
+	 * pin from its PoE handler, cutting USB when the PSE only grants
+	 * 802.3at, which is what identifies it -- it was previously described
+	 * here as a PHY supply.
+	 */
+	usb_power_pins: usb-power-pins {
+		pins = "gpio29";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+		output-high;
+	};
+};
+
+&blsp1_spi1 {
+	status = "okay";
+
+	flash@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0>;
+		compatible = "jedec,spi-nor";
+		spi-max-frequency = <50000000>;
+
+		/*
+		 * The SMEM partition table on this board describes both
+		 * flashes: the 25 entries up to "reserved2" live on this
+		 * SPI-NOR and only rootfs/rootfs_1/logging live on the NAND.
+		 * One "qcom,smem-part" parser cannot express that.  Bound to
+		 * the NAND it emitted the NOR entries scaled by the ratio of
+		 * the erase sizes (256K/64K = 4) and laid them on top of
+		 * rootfs, so "0:art" and "0:appsblenv" resolved to UBI data:
+		 * the extracted caldata was garbage and a write to the U-Boot
+		 * environment would have landed in the root filesystem.  Both
+		 * flashes therefore carry a fixed layout instead.
+		 */
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "0:sbl1";
+				reg = <0x000000 0x050000>;
+				read-only;
+			};
+
+			partition@50000 {
+				label = "0:mibib";
+				reg = <0x050000 0x010000>;
+				read-only;
+			};
+
+			partition@60000 {
+				label = "0:bootconfig";
+				reg = <0x060000 0x020000>;
+				read-only;
+			};
+
+			partition@80000 {
+				label = "0:bootconfig1";
+				reg = <0x080000 0x020000>;
+				read-only;
+			};
+
+			partition@a0000 {
+				label = "0:qsee";
+				reg = <0x0a0000 0x180000>;
+				read-only;
+			};
+
+			partition@220000 {
+				label = "0:qsee_1";
+				reg = <0x220000 0x180000>;
+				read-only;
+			};
+
+			partition@3a0000 {
+				label = "0:devcfg";
+				reg = <0x3a0000 0x010000>;
+				read-only;
+			};
+
+			partition@3b0000 {
+				label = "0:devcfg_1";
+				reg = <0x3b0000 0x010000>;
+				read-only;
+			};
+
+			partition@3c0000 {
+				label = "0:apdp";
+				reg = <0x3c0000 0x010000>;
+				read-only;
+			};
+
+			partition@3d0000 {
+				label = "0:apdp_1";
+				reg = <0x3d0000 0x010000>;
+				read-only;
+			};
+
+			partition@3e0000 {
+				label = "0:rpm";
+				reg = <0x3e0000 0x040000>;
+				read-only;
+			};
+
+			partition@420000 {
+				label = "0:rpm_1";
+				reg = <0x420000 0x040000>;
+				read-only;
+			};
+
+			partition@460000 {
+				label = "0:cdt";
+				reg = <0x460000 0x010000>;
+				read-only;
+			};
+
+			partition@470000 {
+				label = "0:cdt_1";
+				reg = <0x470000 0x010000>;
+				read-only;
+			};
+
+			partition@480000 {
+				label = "0:appsblenv";
+				reg = <0x480000 0x010000>;
+			};
+
+			partition@490000 {
+				label = "0:appsbl";
+				reg = <0x490000 0x100000>;
+				read-only;
+			};
+
+			partition@590000 {
+				label = "0:appsbl_1";
+				reg = <0x590000 0x100000>;
+				read-only;
+			};
+
+			partition@690000 {
+				label = "0:art";
+				reg = <0x690000 0x100000>;
+				read-only;
+			};
+
+			partition@790000 {
+				label = "0:ethphyfw";
+				reg = <0x790000 0x080000>;
+				read-only;
+			};
+
+			partition@810000 {
+				label = "0:hlos";
+				reg = <0x810000 0x800000>;
+			};
+
+			partition@1010000 {
+				label = "0:hlos_1";
+				reg = <0x1010000 0x800000>;
+			};
+
+			partition@1810000 {
+				label = "config";
+				reg = <0x1810000 0x400000>;
+			};
+
+			partition@1c10000 {
+				label = "devcert";
+				reg = <0x1c10000 0x020000>;
+				read-only;
+			};
+
+			partition@1c30000 {
+				label = "reserved1";
+				reg = <0x1c30000 0x020000>;
+			};
+
+			partition@1c50000 {
+				label = "reserved2";
+				reg = <0x1c50000 0x3b0000>;
+			};
+		};
+	};
+};
+
+/*
+ * A Nordic nRF5 running a Zephyr BLE controller hangs off this UART and
+ * speaks plain H4 HCI at 115200 baud with no flow control. hsuart_pins
+ * comes from the SoC dtsi and needs no override here.
+ */
+&blsp1_uart3 {
+	status = "okay";
+};
+
+&blsp1_uart5 {
+	status = "okay";
+};
+
+&cryptobam {
+	status = "okay";
+};
+
+&crypto {
+	status = "okay";
+};
+
+&prng {
+	status = "okay";
+};
+
+&qpic_bam {
+	status = "okay";
+};
+
+&qpic_nand {
+	status = "okay";
+	compatible = "qcom,ebi2-nandc-bam-v1.5.0", "qcom,ipq8074-nand";
+
+	nand@0 {
+		reg = <0>;
+		nand-ecc-strength = <8>;
+		nand-ecc-step-size = <512>;
+		nand-bus-width = <8>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "rootfs";
+				reg = <0x00000000 0x18000000>;
+			};
+
+			partition@18000000 {
+				label = "rootfs_1";
+				reg = <0x18000000 0x18000000>;
+			};
+
+			partition@30000000 {
+				label = "logging";
+				reg = <0x30000000 0x10000000>;
+			};
+		};
+	};
+};
+
+&qusb_phy_0 {
+	status = "okay";
+};
+
+&ssphy_0 {
+	status = "okay";
+};
+
+&usb_0 {
+	status = "okay";
+
+	pinctrl-0 = <&usb_power_pins>;
+	pinctrl-names = "default";
+};
+
+&mdio {
+	status = "okay";
+
+	pinctrl-0 = <&mdio_pins>;
+	pinctrl-names = "default";
+
+	phy8: ethernet-phy@8 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <8>;
+	};
+
+	phy0: ethernet-phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <0>;
+	};
+};
+
+&switch {
+	status = "okay";
+
+	switch_lan_bmp = <ESS_PORT5>;
+	switch_wan_bmp = <ESS_PORT6>;
+	switch_mac_mode1 = <MAC_MODE_USXGMII>;
+	switch_mac_mode2 = <MAC_MODE_USXGMII>;
+	aquantia_port = <4>;
+	aquantia_port2 = <5>;
+
+	qcom,port_phyinfo {
+		port@4 {
+			port_id = <5>;
+			phy_address = <8>;
+			phy_type = <3>;
+			ethernet-phy-ieee802.3-c45;
+			port_mac_sel = "QGMAC_PORT";
+		};
+
+		port@5 {
+			port_id = <6>;
+			phy_address = <0>;
+			phy_type = <3>;
+			ethernet-phy-ieee802.3-c45;
+			port_mac_sel = "QGMAC_PORT";
+		};
+	};
+};
+
+&edma {
+	status = "okay";
+};
+
+&dp5_syn {
+	status = "okay";
+	qcom,mactype = <1>;
+	phy-mode = "usxgmii";
+	phy-handle = <&phy8>;
+	label = "lan1";
+};
+
+&dp6_syn {
+	status = "okay";
+	phy-mode = "usxgmii";
+	phy-handle = <&phy0>;
+	label = "lan2";
+};
+
+&pcie_qmp0 {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+
+	perst-gpios = <&tlmm 58 GPIO_ACTIVE_LOW>;
+
+	pcie@0 {
+		wifi@0,0 {
+			status = "okay";
+
+			compatible = "pci17cb,1104";
+			reg = <0x00010000 0 0 0 0>;
+
+			/* 0000:01:00.0 - vendor board_id 0xab (bdwlan.bab, 6 GHz) */
+			qcom,ath11k-calibration-variant = "Arista-C-360-bab";
+		};
+	};
+};
+
+&pcie_qmp1 {
+	status = "okay";
+};
+
+&pcie1 {
+	status = "okay";
+
+	perst-gpios = <&tlmm 61 GPIO_ACTIVE_LOW>;
+
+	pcie@0 {
+		wifi@0,0 {
+			status = "okay";
+
+			compatible = "pci17cb,1104";
+			reg = <0x00010000 0 0 0 0>;
+
+			/* 0001:01:00.0 - vendor board_id 0xaa (bdwlan.baa) */
+			qcom,ath11k-calibration-variant = "Arista-C-360-baa";
+		};
+	};
+};
+
+&wifi {
+	status = "okay";
+
+	qcom,ath11k-calibration-variant = "Arista-C-360";
+};

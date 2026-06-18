@@ -1,0 +1,81 @@
+#!/bin/sh /etc/rc.common
+
+# Report the PoE class each port negotiated.
+#
+# Both Ethernet ports are powered, and each PD controller drives three status
+# pins that encode what the PSE granted. There is no LLDP involved: a switch
+# that never sends a Power-via-MDI TLV still shows up correctly here.
+#
+#   af (15.4 W)   1 1 1
+#   at (30 W)     1 0 1
+#   bt (60/90 W)  0 1 0
+#
+# Read at boot into the log, or on demand with "/etc/init.d/poe status".
+
+START=99
+
+EXTRA_COMMANDS="status"
+EXTRA_HELP="	status  Print the PoE class negotiated on each port"
+
+# lan1 and lan2, each "<pin> <pin> <pin>" in the order the table above uses.
+POE_PINS_LAN1="54 55 56"
+POE_PINS_LAN2="2 66 27"
+
+tlmm_base() {
+	local d
+
+	for d in /sys/class/gpio/gpiochip*; do
+		[ "$(cat "$d/label" 2>/dev/null)" = "1000000.pinctrl" ] || continue
+		basename "$d" | sed 's/gpiochip//'
+		return 0
+	done
+
+	return 1
+}
+
+read_class() {
+	local base="$1" pins="$2" pin n bits=
+
+	for pin in $pins; do
+		n=$((base + pin))
+		[ -d "/sys/class/gpio/gpio$n" ] || {
+			echo "$n" > /sys/class/gpio/export 2>/dev/null
+			echo in > "/sys/class/gpio/gpio$n/direction" 2>/dev/null
+		}
+		bits="$bits$(cat "/sys/class/gpio/gpio$n/value" 2>/dev/null)"
+	done
+
+	case "$bits" in
+	111) echo "802.3af (15.4 W)" ;;
+	101) echo "802.3at (30 W)" ;;
+	010) echo "802.3bt (60/90 W)" ;;
+	*) echo "unknown ($bits)" ;;
+	esac
+}
+
+poe_report() {
+	local base
+
+	case "$(board_name)" in
+	arista,c-360) ;;
+	*) return 1 ;;
+	esac
+
+	base=$(tlmm_base) || {
+		echo "poe: no TLMM gpiochip" >&2
+		return 1
+	}
+
+	echo "lan1: $(read_class "$base" "$POE_PINS_LAN1")"
+	echo "lan2: $(read_class "$base" "$POE_PINS_LAN2")"
+}
+
+start() {
+	poe_report | while read -r line; do
+		logger -t poe "$line"
+	done
+}
+
+status() {
+	poe_report
+}
