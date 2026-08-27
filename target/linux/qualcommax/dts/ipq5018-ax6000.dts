@@ -2,6 +2,7 @@
 
 #include "ipq5018.dtsi"
 #include "ipq5018-ess.dtsi"
+#include "ipq5018-nss.dtsi"
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
@@ -25,7 +26,11 @@
 		 * ubi.mtd=rootfs_1 root=mtd:ubi_rootfs rootfstype=squashfs rootwait uart_en=1
 		 * so we need to override and set ubi.mtd=rootfs
 		 */
-		bootargs-append = " ubi.mtd=rootfs root=/dev/ubiblock0_0 coherent_pool=2M";
+		/* clk_ignore_unused pd_ignore_unused: clk_disable_unused/power
+		 * domain gating kills the NSS core on ipq5018 (firmware stops,
+		 * offload dead). Keep until the offending clock is isolated.
+		 */
+		bootargs-append = " ubi.mtd=rootfs root=/dev/ubiblock0_0 coherent_pool=2M clk_ignore_unused pd_ignore_unused";
 		stdout-path = "serial0:115200n8";
 	};
 
@@ -540,6 +545,9 @@
 			reg = <0x00010000 0 0 0 0>;
 
 			qcom,ath11k-calibration-variant = "Xiaomi-AX6000";
+
+			/* 5GHz radio: wifili thread scheme priority */
+			nss-radio-priority = <1>;
 		};
 	};
 };
