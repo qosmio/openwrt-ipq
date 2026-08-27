@@ -121,6 +121,12 @@ CONFIG_PACKAGE_kmod-qca-mcs=y
 # NSS SQM Traffic Shaping
 CONFIG_PACKAGE_sqm-scripts-nss=y
 
+# NSS Routed PPPoE Offload
+# Registers PPPoE sessions as NSS dynamic interfaces. Without it ECM gets
+# ae_if=-1 for the pppoe netdev and silently never accelerates routed PPPoE
+# flows (accelerated_count stays 0 with no error logged).
+CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe=y
+
 #####################################################################
 # Compiler Optimization
 #####################################################################
