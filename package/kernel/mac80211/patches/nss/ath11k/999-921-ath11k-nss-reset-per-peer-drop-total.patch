@@ -1,0 +1,22 @@
+From: Yuen Su <zypulsecore@gmail.com>
+Subject: [PATCH] wifi: ath11k: nss: reset the drop total for each peer
+
+The temporary tx_dropped accumulator is initialized before the peer loop,
+so every peer after the first includes drops from earlier peers in the
+same notification. Reset it before summing the current peer's bins.
+
+This changes statistics accounting only; packet handling, wire layout,
+firmware settings and existing counter wrap behavior are unchanged.
+
+Signed-off-by: Yuen Su <zypulsecore@gmail.com>
+---
+--- a/drivers/net/wireless/ath/ath11k/nss.c
++++ b/drivers/net/wireless/ath/ath11k/nss.c
+@@ -193,6 +193,7 @@
+ 		peer->nss.nss_stats->tx_bytes += tx_bytes;
+ 		peer->nss.nss_stats->tx_retries += pstats->tx.retries;
+ 
++		tx_dropped = 0;
+ 		for (j = 0; j < NSS_WIFILI_TQM_RR_MAX; j++)
+ 			tx_dropped += pstats->tx.dropped.drop_stats[j];
+ 
