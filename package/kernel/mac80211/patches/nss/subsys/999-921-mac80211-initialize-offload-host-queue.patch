@@ -1,0 +1,24 @@
+From: Yuen Su <zypulsecore@gmail.com>
+Subject: [PATCH] mac80211: initialize host queue for driver-selected TX queues
+
+HAS_TX_QUEUE drivers bypass ieee80211_select_queue(), leaving queue
+uninitialized before indexing vif.hw_queue. Initialize the host AC to
+best effort while retaining the packet priority and driver queue mapping.
+
+The driver-selected mapping can represent a CPU/hash queue rather than an
+802.11 AC, so it cannot safely index the four-entry vif.hw_queue array.
+The normal software queue selection still overwrites this default.
+
+Signed-off-by: Yuen Su <zypulsecore@gmail.com>
+---
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -4734,7 +4734,7 @@
+ 	struct tid_ampdu_tx *tid_tx;
+ 	struct sk_buff *seg, *next;
+ 	unsigned int skbs = 0, len = 0;
+-	u16 queue;
++	u16 queue = IEEE80211_AC_BE;
+ 	unsigned char *ra = ehdr->h_dest;
+ 	bool multicast;
+ 	u8 tid;
