@@ -1,0 +1,21 @@
+From: Yuen Su <zypulsecore@gmail.com>
+Subject: [PATCH] wifi: ath11k: nss: unregister an unready init context
+
+The interface is registered before checking the NSS context state. If that
+check fails, unwind through unregister so the subsystem data-path entry
+cannot retain the abandoned ath11k context. Earlier failures still use the
+unregistered cleanup path.
+
+Signed-off-by: Yuen Su <zypulsecore@gmail.com>
+---
+--- a/drivers/net/wireless/ath/ath11k/nss.c
++++ b/drivers/net/wireless/ath/ath11k/nss.c
+@@ -4508,7 +4508,7 @@
+ 
+ 	if (nss_cmn_get_state(nss_contex) != NSS_STATE_INITIALIZED) {
+ 		ath11k_warn(ab, "nss state in default init state\n");
+-		goto free;
++		goto unregister;
+ 	}
+ 
+ 	/* The registered soc context is stored in ab, and will be used for
