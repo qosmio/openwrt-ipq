@@ -123,7 +123,7 @@ Signed-off-by: Tamizh Chelvam <quic_tamizhr@quicinc.com>
  					   "full mon msdu_pop: invalid buf_id %d\n",
  					    buf_id);
 -				spin_unlock_bh(&rx_ring->idr_lock);
- 				break;
+ 				goto next_msdu;
  			}
 -			idr_remove(&rx_ring->bufs_idr, buf_id);
 -			spin_unlock_bh(&rx_ring->idr_lock);

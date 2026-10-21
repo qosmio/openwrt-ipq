@@ -101,7 +101,7 @@
  		/* remove it from the ppp unit's list */
  		ppp_lock(ppp);
  		list_del_rcu(&pch->clist);
-@@ -3618,6 +3675,222 @@ static void *unit_find(struct idr *p, in
+@@ -3618,6 +3675,232 @@ static void *unit_find(struct idr *p, in
  	return idr_find(p, n);
  }
  
@@ -122,23 +122,33 @@
 +
 +	ppp = netdev_priv(dev);
 +
-+	ppp_xmit_lock(ppp);
-+	ppp->stats64.tx_packets += tx_packets;
-+	ppp->stats64.tx_bytes += tx_bytes;
-+	ppp->dev->stats.tx_errors += tx_errors;
-+	ppp->dev->stats.tx_dropped += tx_dropped;
 +	if (tx_packets)
-+		ppp->last_xmit = jiffies;
-+	ppp_xmit_unlock(ppp);
++		WRITE_ONCE(ppp->last_xmit, jiffies);
++	if (tx_packets || tx_bytes)
++		dev_sw_netstats_tx_add(dev, tx_packets, tx_bytes);
++	if (tx_errors)
++		WRITE_ONCE(dev->stats.tx_errors,
++			   READ_ONCE(dev->stats.tx_errors) + tx_errors);
++	if (tx_dropped)
++		WRITE_ONCE(dev->stats.tx_dropped,
++			   READ_ONCE(dev->stats.tx_dropped) + tx_dropped);
 +
-+	ppp_recv_lock(ppp);
-+	ppp->stats64.rx_packets += rx_packets;
-+	ppp->stats64.rx_bytes += rx_bytes;
-+	ppp->dev->stats.rx_errors += rx_errors;
-+	ppp->dev->stats.rx_dropped += rx_dropped;
 +	if (rx_packets)
-+		ppp->last_recv = jiffies;
-+	ppp_recv_unlock(ppp);
++		WRITE_ONCE(ppp->last_recv, jiffies);
++	if (rx_packets || rx_bytes) {
++		struct pcpu_sw_netstats *tstats = this_cpu_ptr(dev->tstats);
++
++		u64_stats_update_begin(&tstats->syncp);
++		u64_stats_add(&tstats->rx_packets, rx_packets);
++		u64_stats_add(&tstats->rx_bytes, rx_bytes);
++		u64_stats_update_end(&tstats->syncp);
++	}
++	if (rx_errors)
++		WRITE_ONCE(dev->stats.rx_errors,
++			   READ_ONCE(dev->stats.rx_errors) + rx_errors);
++	if (rx_dropped)
++		WRITE_ONCE(dev->stats.rx_dropped,
++			   READ_ONCE(dev->stats.rx_dropped) + rx_dropped);
 +}
 +
 +/* Returns >0 if the device is a multilink PPP netdevice, 0 if not or < 0 if
@@ -351,12 +361,13 @@
  
  /* per-net private data for this module */
  static unsigned int pppoe_net_id __read_mostly;
-@@ -692,7 +693,7 @@ static int pppoe_connect(struct socket *
+@@ -692,8 +693,8 @@ static int pppoe_connect(struct socket *
  
  		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
  		po->chan.private = sk;
 -		po->chan.ops = &pppoe_chan_ops;
 +		po->chan.ops = (struct ppp_channel_ops *)&pppoe_chan_ops;
+ 		po->chan.direct_xmit = true;
  
  		error = ppp_register_net_channel(dev_net(dev), &po->chan);
  		if (error) {

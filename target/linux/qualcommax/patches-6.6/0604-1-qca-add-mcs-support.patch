@@ -105,7 +105,7 @@
  			goto out;
 --- a/net/bridge/br_input.c
 +++ b/net/bridge/br_input.c
-@@ -30,7 +30,17 @@ br_netif_receive_skb(struct net *net, st
+@@ -30,7 +30,17 @@
  	return netif_receive_skb(skb);
  }
  
@@ -124,7 +124,7 @@
  {
  	struct net_device *indev, *brdev = BR_INPUT_SKB_CB(skb)->brdev;
  	struct net_bridge *br = netdev_priv(brdev);
-@@ -71,6 +81,7 @@ static int br_pass_frame_up(struct sk_bu
+@@ -71,6 +81,7 @@
  		       dev_net(indev), NULL, skb, indev, NULL,
  		       br_netif_receive_skb);
  }
@@ -132,7 +132,7 @@
  
  /* note: already called with rcu_read_lock */
  int br_handle_frame_finish(struct net *net, struct sock *sk, struct sk_buff *skb)
-@@ -84,6 +95,11 @@ int br_handle_frame_finish(struct net *n
+@@ -84,6 +95,11 @@
  	struct net_bridge_mcast *brmctx;
  	struct net_bridge_vlan *vlan;
  	struct net_bridge *br;
@@ -144,7 +144,7 @@
  	bool promisc;
  	u16 vid = 0;
  	u8 state;
-@@ -182,6 +198,12 @@ int br_handle_frame_finish(struct net *n
+@@ -182,6 +198,12 @@
  
  	switch (pkt_type) {
  	case BR_PKT_MULTICAST:
@@ -157,7 +157,7 @@
  		mdst = br_mdb_get(brmctx, skb, vid);
  		if ((mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) &&
  		    br_multicast_querier_exists(brmctx, eth_hdr(skb), mdst)) {
-@@ -197,8 +219,15 @@ int br_handle_frame_finish(struct net *n
+@@ -197,8 +219,15 @@
  		}
  		break;
  	case BR_PKT_UNICAST:
@@ -175,11 +175,11 @@
  	default:
  		break;
  	}
-@@ -213,6 +242,13 @@ int br_handle_frame_finish(struct net *n
- 			dst->used = now;
+@@ -213,6 +242,13 @@
+ 			WRITE_ONCE(dst->used, now);
  		br_forward(dst->dst, skb, local_rcv, false);
  	} else {
-+	  /* QCA qca-mcs support - Start */
++		/* QCA qca-mcs support - Start */
 +		if (pdst) {
 +			br_forward(pdst, skb, local_rcv, false);
 +			goto out;
