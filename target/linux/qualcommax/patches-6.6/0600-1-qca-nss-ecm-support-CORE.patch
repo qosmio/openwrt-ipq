@@ -656,7 +656,7 @@
  
  out_remove_new_fa:
 @@ -1754,6 +1760,9 @@ int fib_table_delete(struct net *net, st
- 	if (fa_to_delete->fa_state & FA_S_ACCESSED)
+ 	if (READ_ONCE(fa_to_delete->fa_state) & FA_S_ACCESSED)
  		rt_cache_flush(cfg->fc_nlinfo.nl_net);
  
 +	blocking_notifier_call_chain(&iproute_chain,

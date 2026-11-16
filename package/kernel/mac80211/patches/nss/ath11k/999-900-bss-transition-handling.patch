@@ -455,7 +455,7 @@
  		break;
  	case HTT_T2H_MSG_TYPE_PPDU_STATS_IND:
  		ath11k_htt_pull_ppdu_stats(ab, skb);
-@@ -2867,25 +2883,25 @@ static void ath11k_dp_rx_h_undecap(struc
+@@ -2867,24 +2883,24 @@ static void ath11k_dp_rx_h_undecap(struc
  }
  
  static struct ath11k_peer *
@@ -469,9 +469,8 @@
 -	lockdep_assert_held(&ab->base_lock);
 +	lockdep_assert_held(&ar->ab->base_lock);
  
- 	if (rxcb->peer_id)
--		peer = ath11k_peer_find_by_id(ab, rxcb->peer_id);
-+		peer = ath11k_peer_find_by_id(ar, rxcb->peer_id);
+-	peer = ath11k_peer_find_by_id(ab, rxcb->peer_id);
++	peer = ath11k_peer_find_by_id(ar, rxcb->peer_id);
  
  	if (peer)
  		return peer;
@@ -638,18 +637,13 @@
  		struct hal_rx_phyrx_rssi_legacy_info *rssi =
  			(struct hal_rx_phyrx_rssi_legacy_info *)tlv_data;
  		u32 reception_type = 0;
-@@ -1542,11 +1541,11 @@ ath11k_hal_rx_parse_mon_status_tlv(struc
+@@ -1542,6 +1541,6 @@ ath11k_hal_rx_parse_mon_status_tlv(struc
  				(struct hal_rx_mpdu_info *)tlv_data;
- 		u16 peer_id;
  
--		peer_id = ath11k_hal_rx_mpduinfo_get_peerid(ab, mpdu_info);
-+		peer_id = ath11k_hal_rx_mpduinfo_get_peerid(ar->ab, mpdu_info);
- 		if (peer_id)
- 			ppdu_info->peer_id = peer_id;
- 
+-		ppdu_info->peer_id = ath11k_hal_rx_mpduinfo_get_peerid(ab, mpdu_info);
 -		ppdu_info->mpdu_len += ab->hw_params.hw_ops->rx_desc_get_hal_mpdu_len(mpdu_info);
++		ppdu_info->peer_id = ath11k_hal_rx_mpduinfo_get_peerid(ar->ab, mpdu_info);
 +		ppdu_info->mpdu_len += ar->ab->hw_params.hw_ops->rx_desc_get_hal_mpdu_len(mpdu_info);
- 
  		break;
  	}
 @@ -1574,7 +1573,7 @@ ath11k_hal_rx_parse_mon_status_tlv(struc
