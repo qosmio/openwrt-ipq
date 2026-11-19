@@ -1,0 +1,22 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+[ "$(board_name)" = "arista,c-360" ] || exit 0
+
+# A Nordic nRF5 running a Zephyr BLE controller sits on blsp1_uart3. Leave it
+# off: it is a radio, and what it should advertise or scan for is a decision
+# for whoever deploys the AP. Setting enabled to 1 makes /etc/init.d/ble
+# attach it and power it on at boot.
+[ -f /etc/config/bluetooth ] || touch /etc/config/bluetooth
+
+uci -q batch <<EOF
+delete bluetooth.ble
+set bluetooth.ble=bluetooth
+set bluetooth.ble.enabled='0'
+EOF
+uci -q commit bluetooth
+
+/etc/init.d/ble enable
+
+exit 0

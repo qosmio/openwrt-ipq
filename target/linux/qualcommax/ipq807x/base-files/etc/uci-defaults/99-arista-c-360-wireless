@@ -1,0 +1,100 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+[ "$(board_name)" = "arista,c-360" ] || exit 0
+
+# Assign band/channel/htmode by PHY *path*.  Radio indices (radio0..N) are not
+# stable across reflashes: wifi-detect numbers them in probe order and the two
+# PCIe controllers race, so keying off the index misconfigures the radios.
+#
+#   c000000.wifi     = IPQ8074 AHB 5GHz
+#   c000000.wifi+1   = IPQ8074 AHB 2.4GHz
+#   0000:01:00.0     = QCN9074 bdwlan.bab (vendor board_id 0xab) [&pcie0]
+#   0001:01:00.0     = QCN9074 bdwlan.baa (vendor board_id 0xaa) [&pcie1]
+#
+# The two QCN9074 are not interchangeable.  As reported by the driver:
+#
+#   bab  Configured Antennas TX/RX 0xf, HE MCS 0-11 for 1..4 streams
+#   baa  Configured Antennas TX/RX 0x5, "2 streams: not supported", and TX
+#        power derated to ~9 dBm vs ~16 dBm
+#
+# so bab is the 4x4 6 GHz service radio and baa is 1x1 -- the scanning radio
+# these enterprise APs fit alongside the service radios.  The chainmask comes
+# from the board data and cannot be raised: `iw phy <phy> set antenna 0xf`
+# fails with -EINVAL both while running and with the radio down.  Prefer bab
+# for client traffic; it reaches 2402 Mbit/s at HE160 against a 2x2 client
+# where baa caps at 1201 Mbit/s.
+#
+# baa only comes up on 6 GHz: its 5 GHz AP fails to start on every channel and
+# width tried (HT40 unsupported / COUNTRY_UPDATE->DISABLED).  Give the two
+# radios separate 160 MHz blocks so they do not overlap.
+#
+# 6 GHz channels must be PSC (5/21/37/53/69/85).  Clients do not scan non-PSC
+# channels, so a 6 GHz AP parked elsewhere is undiscoverable.
+#
+# Note on regulatory: the QCN9074 firmware this device needs (vendor amss.bin,
+# fw_version 0x2508ffff, build 2022-10-17) reports no 6 GHz rules for a number
+# of countries -- including JP -- and both radios then lose every 6 GHz channel
+# and fail to start.  US and KR give 59 channels, the EU codes give 24.  Check
+# with `iw reg set <CC>` and count non-disabled channels in `iw phy <phy> info`
+# before setting a country here.
+
+set_radio() { # $1=path suffix  $2=band  $3=channel  $4=htmode
+	for s in $(uci -q show wireless | sed -n 's/^wireless\.\(radio[0-9]*\)=wifi-device/\1/p'); do
+		case "$(uci -q get wireless.$s.path)" in
+		*"$1")
+			uci -q set wireless.$s.band="$2"
+			uci -q set wireless.$s.channel="$3"
+			uci -q set wireless.$s.htmode="$4"
+			;;
+		esac
+	done
+}
+
+set_iface() { # $1=path suffix  $2=option  $3=value
+	for s in $(uci -q show wireless | sed -n 's/^wireless\.\(radio[0-9]*\)=wifi-device/\1/p'); do
+		case "$(uci -q get wireless.$s.path)" in
+		*"$1") ;;
+		*) continue ;;
+		esac
+		for i in $(uci -q show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface/\1/p'); do
+			[ "$(uci -q get wireless.$i.device)" = "$s" ] || continue
+			uci -q set wireless.$i."$2"="$3"
+		done
+	done
+}
+
+set_radio "c000000.wifi"    5g 36 HE80
+set_radio "c000000.wifi+1"  2g  1 HE20
+set_radio "0000:01:00.0"    6g  5 HE160   # bab, 4x4
+set_radio "0001:01:00.0"    6g 37 HE160   # baa, 1x1
+
+# Give the 4x4 radio a fixed interface name. The two PCIe radios genuinely
+# race: across reboots bab has come up as both phy2 and phy3, so the default
+# phy<N>-ap0 name points at a different card each time and anything keyed off
+# it -- the 6 GHz LED in board.d -- follows the wrong radio.
+set_iface "0000:01:00.0" ifname wlan6g
+
+# A 6 GHz-only BSS is reached out of band, through the Reduced Neighbor
+# Report carried in the co-located 2.4/5 GHz beacons, so advertise it there.
+for p in "c000000.wifi" "c000000.wifi+1" "0000:01:00.0" "0001:01:00.0"; do
+	set_iface "$p" rnr 1
+done
+
+# RSN Overriding lets an AP offer a second RSNE that only newer clients
+# parse, so the original one can stay readable by legacy STAs. A 6 GHz BSS
+# has no legacy STAs and must not carry those elements, but rsn_override
+# defaults to 1 and is applied to every HE/EHT BSS. 6 GHz also mandates SAE
+# hash-to-element, while the default sae_pwe still offers the loop.
+#
+# Both are really band-wide properties and belong in the wifi-scripts
+# defaults; keep them here until that is fixed generally.
+for p in "0000:01:00.0" "0001:01:00.0"; do
+	set_iface "$p" rsn_override 0
+	set_iface "$p" sae_pwe 1
+done
+
+uci -q commit wireless
+
+exit 0
