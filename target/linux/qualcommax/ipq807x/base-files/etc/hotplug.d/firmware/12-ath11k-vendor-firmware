@@ -5,7 +5,7 @@
 # the vendor system on its own flash. When the driver first asks for a file
 # that is missing, copy it from there, unmodified.
 
-[ -e /lib/firmware/$FIRMWARE ] && exit 0
+[ -e "/lib/firmware/$FIRMWARE" ] && exit 0
 
 . /lib/functions.sh
 
@@ -29,7 +29,10 @@ vendor_firmware_extract() {
 		# the node's own hotplug event waits behind this one
 		node=/dev/$vol
 		[ -c "$node" ] || mknod "$node" c $(sed 's/:/ /' /sys/class/ubi/$vol/dev)
-		tmp=$(mktemp -d)
+		tmp=$(mktemp -d) || {
+			ubidetach -d "$ubi" > /dev/null 2>&1
+			return 1
+		}
 		unsquashfs -n -d "$tmp" "$node" \
 			$(for f in "$@"; do echo "$src/$f"; done) > /dev/null 2>&1
 		mkdir -p "/lib/firmware/${FIRMWARE%/*}"

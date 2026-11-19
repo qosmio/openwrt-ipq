@@ -90,7 +90,7 @@ define Device/arista_c-360
 	PAGESIZE := 4096
 	SOC := ipq8072
 	DEVICE_PACKAGES := ipq-wifi-arista_c-360 kmod-ath11k-pci \
-		kmod-phy-aquantia kmod-spi-gpio kmod-gpio-nxp-74hc164 \
+		kmod-spi-gpio kmod-gpio-nxp-74hc164 \
 		kmod-hci-uart bluez-utils bluez-utils-extra \
 		kmod-tpm-tis-spi ubi-utils squashfs-tools-unsquashfs
 endef
