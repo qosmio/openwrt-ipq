@@ -36,171 +36,16 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: 5. Nhúng script cấu hình mạng tự động (uci-defaults)
+      - name: 5. Nhúng cấu hình an toàn (chỉ Tiếng Việt + thư mục AdGuardHome)
         run: |
           mkdir -p files/etc/uci-defaults files/etc
 
-          cat << 'EOF' > files/etc/uci-defaults/99-mr7350-custom
+          cat << 'EOF' > files/etc/uci-defaults/99-mr7350-safe
           #!/bin/sh
           uci set luci.main.lang='vi'
-
-          # Xóa cầu nối br-lan mặc định đang chiếm 4 cổng LAN
-          while [ "$(uci -q get network.@device[0].name)" = "br-lan" ]; do
-            uci -q delete network.@device[0]
-          done
-
-          uci -q delete network.lan
-          uci -q delete network.br_lan1
-          uci -q delete network.br_lan2
-          uci -q delete network.lan1
-          uci -q delete network.lan2
-          uci -q delete network.wg0
-          uci -q delete network.tailscale
-          uci -q delete network.globals.ula_prefix
-          uci -q delete network.wan6
-          uci -q set network.wan.ipv6='0'
-
-          # Tạo br-lan1 đúng chuẩn DSA (dùng add_list)
-          uci set network.br_lan1='device'
-          uci set network.br_lan1.name='br-lan1'
-          uci set network.br_lan1.type='bridge'
-          uci add_list network.br_lan1.ports='lan1'
-          uci add_list network.br_lan1.ports='lan2'
-          uci set network.br_lan1.ipv6='0'
-
-          uci set network.lan1='interface'
-          uci set network.lan1.device='br-lan1'
-          uci set network.lan1.proto='static'
-          uci set network.lan1.ipaddr='192.168.1.1'
-          uci set network.lan1.netmask='255.255.255.0'
-          uci set network.lan1.ipv6='0'
-          uci set network.lan1.delegate='0'
-
-          # Tạo br-lan2 đúng chuẩn DSA (dùng add_list)
-          uci set network.br_lan2='device'
-          uci set network.br_lan2.name='br-lan2'
-          uci set network.br_lan2.type='bridge'
-          uci add_list network.br_lan2.ports='lan3'
-          uci add_list network.br_lan2.ports='lan4'
-          uci set network.br_lan2.ipv6='0'
-
-          uci set network.lan2='interface'
-          uci set network.lan2.device='br-lan2'
-          uci set network.lan2.proto='static'
-          uci set network.lan2.ipaddr='10.168.10.1'
-          uci set network.lan2.netmask='255.255.255.0'
-          uci set network.lan2.ipv6='0'
-          uci set network.lan2.delegate='0'
-
-          uci set network.wg0='interface'
-          uci set network.wg0.proto='wireguard'
-          uci set network.wg0.listen_port='51820'
-          uci add_list network.wg0.addresses='10.0.10.1/24'
-          uci set network.wg0.ipv6='0'
-
-          uci set network.tailscale='interface'
-          uci set network.tailscale.proto='none'
-          uci set network.tailscale.device='tailscale0'
-          uci set network.tailscale.ipv6='0'
-
-          uci -q delete dhcp.lan
-          uci -q delete dhcp.lan1
-          uci -q delete dhcp.lan2
-
-          uci set dhcp.lan1='dhcp'
-          uci set dhcp.lan1.interface='lan1'
-          uci set dhcp.lan1.start='100'
-          uci set dhcp.lan1.limit='150'
-          uci set dhcp.lan1.leasetime='12h'
-          uci add_list dhcp.lan1.dhcp_option='6,192.168.1.1'
-
-          uci set dhcp.lan2='dhcp'
-          uci set dhcp.lan2.interface='lan2'
-          uci set dhcp.lan2.start='100'
-          uci set dhcp.lan2.limit='150'
-          uci set dhcp.lan2.leasetime='12h'
-          uci add_list dhcp.lan2.dhcp_option='6,10.168.10.1'
-
-          uci set dhcp.@dnsmasq[0].port='54'
-          [ -x /etc/init.d/odhcpd ] && { /etc/init.d/odhcpd stop; /etc/init.d/odhcpd disable; } 2>/dev/null
-          uci commit
-
-          for z in lan wg0 tailscale; do
-            while i=$(uci -q get firewall.@zone[0].name); do
-              [ "$i" = "$z" ] && uci -q delete firewall.@zone[0] || break
-            done
-          done
-
-          uci add firewall zone
-          uci set firewall.@zone[-1].name='lan'
-          uci add_list firewall.@zone[-1].network='lan1'
-          uci add_list firewall.@zone[-1].network='lan2'
-          uci set firewall.@zone[-1].input='ACCEPT'
-          uci set firewall.@zone[-1].output='ACCEPT'
-          uci set firewall.@zone[-1].forward='ACCEPT'
-
-          uci add firewall zone
-          uci set firewall.@zone[-1].name='wg0'
-          uci add_list firewall.@zone[-1].network='wg0'
-          uci set firewall.@zone[-1].input='ACCEPT'
-          uci set firewall.@zone[-1].output='ACCEPT'
-          uci set firewall.@zone[-1].forward='ACCEPT'
-
-          uci add firewall zone
-          uci set firewall.@zone[-1].name='tailscale'
-          uci add_list firewall.@zone[-1].network='tailscale'
-          uci set firewall.@zone[-1].input='ACCEPT'
-          uci set firewall.@zone[-1].output='ACCEPT'
-          uci set firewall.@zone[-1].forward='ACCEPT'
-
-          for pair in "lan:wan" "wg0:lan" "wg0:wan" "tailscale:lan" "tailscale:wan"; do
-            s="${pair%:*}"; d="${pair#*:}"
-            uci add firewall forwarding
-            uci set firewall.@forwarding[-1].src="$s"
-            uci set firewall.@forwarding[-1].dest="$d"
-          done
-
-          uci add firewall rule
-          uci set firewall.@rule[-1].name='WG-51820'
-          uci set firewall.@rule[-1].src='wan'
-          uci set firewall.@rule[-1].dest_port='51820'
-          uci set firewall.@rule[-1].proto='udp'
-          uci set firewall.@rule[-1].target='ACCEPT'
-          uci commit
-
-          cat << 'SYSCTL' > /etc/sysctl.d/99-tun.conf
-          net.ipv6.conf.all.disable_ipv6=1
-          net.ipv6.conf.default.disable_ipv6=1
-          net.ipv6.conf.all.forwarding=0
-          net.ipv6.conf.default.forwarding=0
-          net.ipv6.conf.all.accept_ra=0
-          net.ipv6.conf.default.accept_ra=0
-          net.ipv6.conf.all.autoconf=0
-          net.ipv6.conf.default.autoconf=0
-          net.netfilter.nf_conntrack_max=32768
-          net.netfilter.nf_conntrack_buckets=8192
-          net.netfilter.nf_conntrack_tcp_timeout_established=1800
-          net.netfilter.nf_conntrack_udp_timeout=1800
-          net.netfilter.nf_conntrack_udp_timeout_stream=1800
-          SYSCTL
-
-          for p in /proc/sys/net/ipv6/conf/*; do
-            [ "${p##*/}" = "lo" ] && continue
-            [ -w "$p/disable_ipv6" ] && echo 1 > "$p/disable_ipv6"
-            for k in forwarding accept_ra autoconf; do [ -w "$p/$k" ] && echo 0 > "$p/$k"; done
-          done
-          [ -w /sys/module/nf_conntrack/parameters/hashsize ] && echo 8192 > /sys/module/nf_conntrack/parameters/hashsize
-          sysctl -p /etc/sysctl.d/99-tun.conf >/dev/null 2>&1
-
-          [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq restart 2>/dev/null
+          uci commit luci
           mkdir -p /tmp/adguardhome/work /tmp/adguardhome/log
           chmod 0755 /tmp/adguardhome /tmp/adguardhome/work /tmp/adguardhome/log
-          if [ -x /etc/init.d/adguardhome ]; then
-            /etc/init.d/adguardhome enable 2>/dev/null
-            /etc/init.d/adguardhome start 2>/dev/null
-          fi
-          [ -x /etc/init.d/tailscale ] && /etc/init.d/tailscale enable 2>/dev/null
-
           exit 0
           EOF
 
@@ -211,7 +56,7 @@ jobs:
           exit 0
           EOF
 
-          chmod +x files/etc/uci-defaults/99-mr7350-custom files/etc/rc.local
+          chmod +x files/etc/uci-defaults/99-mr7350-safe files/etc/rc.local
 
       - name: 6. Tạo file .config tối ưu MR7350 (chỉ dây + HWNAT NSS)
         run: |
@@ -219,10 +64,14 @@ jobs:
           CONFIG_TARGET_qualcommax=y
           CONFIG_TARGET_qualcommax_ipq60xx=y
           CONFIG_TARGET_qualcommax_ipq60xx_DEVICE_linksys_mr7350=y
+
+          # Giữ HWNAT NSS cho WAN/LAN có dây
           CONFIG_PACKAGE_kmod-qca-nss-drv=y
           CONFIG_PACKAGE_kmod-qca-nss-dp=y
           CONFIG_PACKAGE_kmod-qca-nss-ecm=y
           CONFIG_PACKAGE_kmod-qca-ssdk=y
+
+          # Các gói thêm
           CONFIG_PACKAGE_luci=y
           CONFIG_PACKAGE_luci-i18n-base-vi=y
           CONFIG_PACKAGE_ddns-scripts=y
@@ -234,6 +83,8 @@ jobs:
           CONFIG_PACKAGE_qrencode=y
           CONFIG_PACKAGE_adguardhome=y
           CONFIG_PACKAGE_luci-app-adguardhome=y
+
+          # Bỏ Wi-Fi full
           # CONFIG_PACKAGE_ath11k-firmware-ipq6018 is not set
           # CONFIG_PACKAGE_ipq-wifi-linksys_mr7350 is not set
           # CONFIG_PACKAGE_hostapd-common is not set
@@ -251,12 +102,16 @@ jobs:
           # CONFIG_PACKAGE_wifi-scripts is not set
           # CONFIG_PACKAGE_wireless-regdb is not set
           # CONFIG_PACKAGE_wpad-openssl is not set
+
+          # Bỏ IPv6
           # CONFIG_IPV6 is not set
           # CONFIG_PACKAGE_luci-proto-ipv6 is not set
           # CONFIG_PACKAGE_odhcpd-ipv6only is not set
           # CONFIG_PACKAGE_odhcp6c is not set
           # CONFIG_PACKAGE_kmod-nf-reject6 is not set
           # CONFIG_PACKAGE_kmod-udptunnel6 is not set
+
+          # Bỏ SQM / QoS / ZRAM (giữ kmod-sched-core để không lỗi NSS ECM)
           # CONFIG_PACKAGE_luci-app-sqm is not set
           # CONFIG_PACKAGE_sqm-scripts is not set
           # CONFIG_PACKAGE_kmod-ifb is not set
@@ -268,7 +123,6 @@ jobs:
           # CONFIG_PACKAGE_kmod-sched-act-police is not set
           # CONFIG_PACKAGE_kmod-sched-act-vlan is not set
           # CONFIG_PACKAGE_kmod-sched-cake is not set
-          # CONFIG_PACKAGE_kmod-sched-core is not set
           # CONFIG_PACKAGE_kmod-sched-ets is not set
           # CONFIG_PACKAGE_kmod-sched-flower is not set
           # CONFIG_PACKAGE_kmod-sched-gred is not set
@@ -278,6 +132,7 @@ jobs:
           # CONFIG_PACKAGE_kmod-sched-red is not set
           EOF
           make defconfig
+          grep -E "kmod-qca-nss-ecm|kmod-ath11k|qca-ppe-qos" .config || true
 
       - name: 7. Tải gói và biên dịch firmware
         run: |
