@@ -36,9 +36,9 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: 5. Nhúng cấu hình an toàn (chỉ Tiếng Việt + thư mục AdGuardHome)
+      - name: 5. Nhúng cấu hình an toàn (Tiếng Việt + thư mục AdGuardHome + tắt IPv6 runtime)
         run: |
-          mkdir -p files/etc/uci-defaults files/etc
+          mkdir -p files/etc/uci-defaults files/etc/sysctl.d
 
           cat << 'EOF' > files/etc/uci-defaults/99-mr7350-safe
           #!/bin/sh
@@ -56,9 +56,18 @@ jobs:
           exit 0
           EOF
 
+          cat << 'EOF' > files/etc/sysctl.d/99-disable-ipv6.conf
+          net.ipv6.conf.all.disable_ipv6=1
+          net.ipv6.conf.default.disable_ipv6=1
+          net.ipv6.conf.all.accept_ra=0
+          net.ipv6.conf.default.accept_ra=0
+          net.ipv6.conf.all.autoconf=0
+          net.ipv6.conf.default.autoconf=0
+          EOF
+
           chmod +x files/etc/uci-defaults/99-mr7350-safe files/etc/rc.local
 
-      - name: 6. Tạo file .config tối ưu MR7350 (chỉ dây + HWNAT NSS)
+      - name: 6. Tạo file .config tối ưu MR7350 (chỉ dây + HWNAT NSS) & Kiểm tra lỗi sớm
         run: |
           cat << 'EOF' > .config
           CONFIG_TARGET_qualcommax=y
@@ -71,7 +80,7 @@ jobs:
           CONFIG_PACKAGE_kmod-qca-nss-ecm=y
           CONFIG_PACKAGE_kmod-qca-ssdk=y
 
-          # Các gói thêm
+          # Các gói dịch vụ cần dùng
           CONFIG_PACKAGE_luci=y
           CONFIG_PACKAGE_luci-i18n-base-vi=y
           CONFIG_PACKAGE_ddns-scripts=y
@@ -84,11 +93,12 @@ jobs:
           CONFIG_PACKAGE_adguardhome=y
           CONFIG_PACKAGE_luci-app-adguardhome=y
 
-          # Bỏ Wi-Fi full
+          # Bỏ Wi-Fi full (bao gồm toàn bộ biến thể wpad/hostapd)
           # CONFIG_PACKAGE_ath11k-firmware-ipq6018 is not set
           # CONFIG_PACKAGE_ipq-wifi-linksys_mr7350 is not set
           # CONFIG_PACKAGE_hostapd-common is not set
           # CONFIG_PACKAGE_iw is not set
+          # CONFIG_PACKAGE_iwinfo is not set
           # CONFIG_PACKAGE_kmod-ath is not set
           # CONFIG_PACKAGE_kmod-ath11k is not set
           # CONFIG_PACKAGE_kmod-ath11k-ahb is not set
@@ -101,17 +111,22 @@ jobs:
           # CONFIG_PACKAGE_ucode-mod-nl80211 is not set
           # CONFIG_PACKAGE_wifi-scripts is not set
           # CONFIG_PACKAGE_wireless-regdb is not set
+          # CONFIG_PACKAGE_wpad-basic is not set
+          # CONFIG_PACKAGE_wpad-basic-mbedtls is not set
+          # CONFIG_PACKAGE_wpad-basic-wolfssl is not set
+          # CONFIG_PACKAGE_wpad-basic-openssl is not set
+          # CONFIG_PACKAGE_wpad-mbedtls is not set
+          # CONFIG_PACKAGE_wpad-wolfssl is not set
           # CONFIG_PACKAGE_wpad-openssl is not set
+          # CONFIG_PACKAGE_wpad-mini is not set
+          # CONFIG_PACKAGE_wpad is not set
 
-          # Bỏ IPv6
-          # CONFIG_IPV6 is not set
+          # Bỏ dịch vụ IPv6 (giữ CONFIG_IPV6=y ở kernel để tránh lỗi biên dịch NSS/FW4)
           # CONFIG_PACKAGE_luci-proto-ipv6 is not set
           # CONFIG_PACKAGE_odhcpd-ipv6only is not set
           # CONFIG_PACKAGE_odhcp6c is not set
-          # CONFIG_PACKAGE_kmod-nf-reject6 is not set
-          # CONFIG_PACKAGE_kmod-udptunnel6 is not set
 
-          # Bỏ SQM / QoS / ZRAM (giữ kmod-sched-core để không lỗi NSS ECM)
+          # Bỏ SQM / QoS / ZRAM (giữ kmod-sched-core cho NSS ECM)
           # CONFIG_PACKAGE_luci-app-sqm is not set
           # CONFIG_PACKAGE_sqm-scripts is not set
           # CONFIG_PACKAGE_kmod-ifb is not set
@@ -119,20 +134,20 @@ jobs:
           # CONFIG_PACKAGE_qca-ppe-qos is not set
           # CONFIG_PACKAGE_zram-swap is not set
           # CONFIG_PACKAGE_kmod-zram is not set
-          # CONFIG_PACKAGE_kmod-sched-act-pedit is not set
-          # CONFIG_PACKAGE_kmod-sched-act-police is not set
-          # CONFIG_PACKAGE_kmod-sched-act-vlan is not set
-          # CONFIG_PACKAGE_kmod-sched-cake is not set
-          # CONFIG_PACKAGE_kmod-sched-ets is not set
-          # CONFIG_PACKAGE_kmod-sched-flower is not set
-          # CONFIG_PACKAGE_kmod-sched-gred is not set
-          # CONFIG_PACKAGE_kmod-sched-mqprio is not set
-          # CONFIG_PACKAGE_kmod-sched-mqprio-common is not set
-          # CONFIG_PACKAGE_kmod-sched-prio is not set
-          # CONFIG_PACKAGE_kmod-sched-red is not set
           EOF
+
           make defconfig
-          grep -E "kmod-qca-nss-ecm|kmod-ath11k|qca-ppe-qos" .config || true
+
+          echo "=== KIEM TRA GOI NSS ==="
+          grep -E "^CONFIG_PACKAGE_kmod-qca-nss-(drv|dp|ecm)=" .config
+
+          echo "=== KIEM TRA SOT GOI WI-FI ==="
+          if grep -E "^CONFIG_PACKAGE_(wpad|hostapd|ath11k|kmod-ath|kmod-cfg80211|kmod-mac80211)" .config; then
+            echo "LOI: Van con sot goi Wi-Fi trong .config, dung build som!"
+            exit 1
+          else
+            echo "OK: Da loai bo sach goi Wi-Fi."
+          fi
 
       - name: 7. Tải gói và biên dịch firmware
         run: |
