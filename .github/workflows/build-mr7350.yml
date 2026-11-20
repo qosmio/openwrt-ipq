@@ -44,6 +44,11 @@ jobs:
           #!/bin/sh
           uci set luci.main.lang='vi'
 
+          # Xóa cầu nối br-lan mặc định đang chiếm 4 cổng LAN
+          while [ "$(uci -q get network.@device[0].name)" = "br-lan" ]; do
+            uci -q delete network.@device[0]
+          done
+
           uci -q delete network.lan
           uci -q delete network.br_lan1
           uci -q delete network.br_lan2
@@ -55,10 +60,12 @@ jobs:
           uci -q delete network.wan6
           uci -q set network.wan.ipv6='0'
 
+          # Tạo br-lan1 đúng chuẩn DSA (dùng add_list)
           uci set network.br_lan1='device'
           uci set network.br_lan1.name='br-lan1'
           uci set network.br_lan1.type='bridge'
-          uci set network.br_lan1.ports='lan1 lan2'
+          uci add_list network.br_lan1.ports='lan1'
+          uci add_list network.br_lan1.ports='lan2'
           uci set network.br_lan1.ipv6='0'
 
           uci set network.lan1='interface'
@@ -69,10 +76,12 @@ jobs:
           uci set network.lan1.ipv6='0'
           uci set network.lan1.delegate='0'
 
+          # Tạo br-lan2 đúng chuẩn DSA (dùng add_list)
           uci set network.br_lan2='device'
           uci set network.br_lan2.name='br-lan2'
           uci set network.br_lan2.type='bridge'
-          uci set network.br_lan2.ports='lan3 lan4'
+          uci add_list network.br_lan2.ports='lan3'
+          uci add_list network.br_lan2.ports='lan4'
           uci set network.br_lan2.ipv6='0'
 
           uci set network.lan2='interface'
@@ -121,15 +130,42 @@ jobs:
               [ "$i" = "$z" ] && uci -q delete firewall.@zone[0] || break
             done
           done
-          uci add firewall zone; uci set firewall.@zone[-1].name='lan'; uci set firewall.@zone[-1].network='lan1 lan2'; uci set firewall.@zone[-1].input='ACCEPT'; uci set firewall.@zone[-1].output='ACCEPT'; uci set firewall.@zone[-1].forward='ACCEPT'
-          uci add firewall zone; uci set firewall.@zone[-1].name='wg0'; uci set firewall.@zone[-1].network='wg0'; uci set firewall.@zone[-1].input='ACCEPT'; uci set firewall.@zone[-1].output='ACCEPT'; uci set firewall.@zone[-1].forward='ACCEPT'
-          uci add firewall zone; uci set firewall.@zone[-1].name='tailscale'; uci set firewall.@zone[-1].network='tailscale'; uci set firewall.@zone[-1].input='ACCEPT'; uci set firewall.@zone[-1].output='ACCEPT'; uci set firewall.@zone[-1].forward='ACCEPT'
+
+          uci add firewall zone
+          uci set firewall.@zone[-1].name='lan'
+          uci add_list firewall.@zone[-1].network='lan1'
+          uci add_list firewall.@zone[-1].network='lan2'
+          uci set firewall.@zone[-1].input='ACCEPT'
+          uci set firewall.@zone[-1].output='ACCEPT'
+          uci set firewall.@zone[-1].forward='ACCEPT'
+
+          uci add firewall zone
+          uci set firewall.@zone[-1].name='wg0'
+          uci add_list firewall.@zone[-1].network='wg0'
+          uci set firewall.@zone[-1].input='ACCEPT'
+          uci set firewall.@zone[-1].output='ACCEPT'
+          uci set firewall.@zone[-1].forward='ACCEPT'
+
+          uci add firewall zone
+          uci set firewall.@zone[-1].name='tailscale'
+          uci add_list firewall.@zone[-1].network='tailscale'
+          uci set firewall.@zone[-1].input='ACCEPT'
+          uci set firewall.@zone[-1].output='ACCEPT'
+          uci set firewall.@zone[-1].forward='ACCEPT'
 
           for pair in "lan:wan" "wg0:lan" "wg0:wan" "tailscale:lan" "tailscale:wan"; do
             s="${pair%:*}"; d="${pair#*:}"
-            uci add firewall forwarding; uci set firewall.@forwarding[-1].src="$s"; uci set firewall.@forwarding[-1].dest="$d"
+            uci add firewall forwarding
+            uci set firewall.@forwarding[-1].src="$s"
+            uci set firewall.@forwarding[-1].dest="$d"
           done
-          uci add firewall rule; uci set firewall.@rule[-1].name='WG-51820'; uci set firewall.@rule[-1].src='wan'; uci set firewall.@rule[-1].dest_port='51820'; uci set firewall.@rule[-1].proto='udp'; uci set firewall.@rule[-1].target='ACCEPT'
+
+          uci add firewall rule
+          uci set firewall.@rule[-1].name='WG-51820'
+          uci set firewall.@rule[-1].src='wan'
+          uci set firewall.@rule[-1].dest_port='51820'
+          uci set firewall.@rule[-1].proto='udp'
+          uci set firewall.@rule[-1].target='ACCEPT'
           uci commit
 
           cat << 'SYSCTL' > /etc/sysctl.d/99-tun.conf
@@ -164,6 +200,7 @@ jobs:
             /etc/init.d/adguardhome start 2>/dev/null
           fi
           [ -x /etc/init.d/tailscale ] && /etc/init.d/tailscale enable 2>/dev/null
+
           exit 0
           EOF
 
