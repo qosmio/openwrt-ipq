@@ -11,6 +11,17 @@ arcadyan,aw1000)
 	ucidef_set_led_netdev "wan" "WAN" "green:internet" "wan"
 	ucidef_set_led_netdev "wan-port-link" "WAN-PORT-LINK" "90000.mdio-1:1c:green:wan" "wan" "tx rx link_10 link_100 link_1000 link_2500"
 	;;
+arista,c-360)
+	# Follow the AP netdev: the mac80211 phyNradio trigger stays dark on
+	# ath11k. The AHB radios are always phy0 (5 GHz) and phy1 (2.4 GHz).
+	# The two PCIe radios race, so the 6 GHz LED cannot use a phy number;
+	# it follows wlan6g, the fixed name uci-defaults puts on the 4x4 card.
+	ucidef_set_led_netdev "wlan2g" "WLAN2G" "green:wlan-2ghz" "phy1-ap0"
+	ucidef_set_led_netdev "wlan5g" "WLAN5G" "green:wlan-5ghz" "phy0-ap0"
+	ucidef_set_led_netdev "wlan6g" "WLAN6G" "green:wlan-6ghz" "wlan6g"
+	ucidef_set_led_netdev "lan1" "LAN1" "green:lan-1" "lan1"
+	ucidef_set_led_netdev "lan2" "LAN2" "green:lan-2" "lan2"
+	;;
 asus,rt-ax89x)
 	ucidef_set_led_netdev "aqr" "AQR" "white:aqr10g" "10g-copper"
 	ucidef_set_led_netdev "sfp" "SFP" "white:sfp" "10g-sfp"

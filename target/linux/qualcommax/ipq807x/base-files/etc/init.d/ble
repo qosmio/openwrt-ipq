@@ -1,0 +1,77 @@
+#!/bin/sh /etc/rc.common
+
+# Attach a BLE controller that sits behind a UART.
+#
+# Only the plumbing is automated here: bringing the line discipline up and
+# giving the controller an address it can be powered on with. What the radio
+# is then used for -- advertising, scanning -- is left to whoever enables it,
+# so this does nothing until bluetooth.ble.enabled is set.
+
+START=99
+
+start() {
+	local enabled tty speed mac addr first i
+
+	case "$(board_name)" in
+	arista,c-360)
+		tty=/dev/ttyMSM1
+		speed=115200
+		;;
+	*)
+		return 0
+		;;
+	esac
+
+	config_load bluetooth
+	config_get_bool enabled ble enabled 0
+	[ "$enabled" = 1 ] || return 0
+
+	[ -c "$tty" ] || {
+		echo "ble: $tty is missing" >&2
+		return 1
+	}
+
+	hciattach -s "$speed" "$tty" any "$speed" noflow nosleep || {
+		echo "ble: hciattach failed" >&2
+		return 1
+	}
+
+	i=0
+	while [ ! -d /sys/class/bluetooth/hci0 ]; do
+		i=$((i + 1))
+		[ "$i" -gt 10 ] && {
+			echo "ble: hci0 never appeared" >&2
+			return 1
+		}
+		sleep 1
+	done
+
+	# hci0 shows up before the controller has finished its init exchange,
+	# and an address set into that window is silently dropped: the
+	# interface then refuses to power on and stays at 00:00:00:00:00:00.
+	sleep 3
+
+	# The controller has no public address -- it reports all zeroes, and
+	# hciconfig refuses to bring the interface up without one. Derive a
+	# static random address from the label MAC so it stays put across
+	# reboots and differs between units; the two topmost bits mark it
+	# static.
+	config_get addr ble address
+	[ -n "$addr" ] || {
+		mac=$(cat /sys/class/net/lan1/address 2>/dev/null)
+		[ -n "$mac" ] || {
+			echo "ble: no MAC to derive an address from" >&2
+			return 1
+		}
+		first=$(printf '%02x' $(((0x${mac%%:*} | 0xc0))))
+		addr="$first:${mac#*:}"
+	}
+
+	btmgmt --index 0 static-addr "$addr" >/dev/null 2>&1
+	btmgmt --index 0 power on >/dev/null 2>&1
+}
+
+stop() {
+	hciconfig hci0 down >/dev/null 2>&1
+	killall hciattach >/dev/null 2>&1
+}
